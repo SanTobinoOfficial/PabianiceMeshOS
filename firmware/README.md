@@ -33,9 +33,9 @@ idf.py build
 idf.py -p /dev/ttyUSB0 flash monitor
 ```
 
-Świeży projekt, więc pierwsze `idf.py build` może się wywalić na brakujących
-`REQUIRES` w którymś CMakeLists.txt komponentu - jeszcze nie miałem okazji zbudować
-tego na czystym środowisku, dopisz czego brakuje.
+Build zweryfikowany w CI (`.github/workflows/firmware-ci.yml`, `idf.py build`
+na czystym środowisku, target esp32s3) - jeśli mimo to coś się wywali lokalnie,
+zwykle brakujący `REQUIRES` w którymś CMakeLists.txt komponentu.
 
 ## Okablowanie (devkit ESP32-S3 + moduł SX1262)
 

@@ -23,9 +23,9 @@ idf.py set-target esp32s3
 idf.py build
 ```
 
-Jeśli to Twój pierwszy build tego projektu i coś się wywali na brakującej zależności
-w którymś komponencie (`REQUIRES` w CMakeLists.txt) - dopisz brakujący komponent,
-projekt jest świeży i nie był jeszcze budowany na czystym środowisku od zera.
+Build jest zweryfikowany w CI na czystym środowisku (`.github/workflows/firmware-ci.yml`) -
+jeśli mimo to coś się wywali lokalnie na brakującej zależności w komponencie
+(`REQUIRES` w CMakeLists.txt), dopisz brakujący komponent.
 
 ## Flashowanie
 
