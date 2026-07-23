@@ -3,7 +3,7 @@ use axum::Json;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::auth::{generate_session_token, verify_password, CurrentUser};
+use crate::auth::{generate_session_token, hash_token, verify_password, CurrentUser};
 use crate::error::ApiError;
 use crate::roles::Role;
 use crate::state::AppState;
@@ -38,8 +38,8 @@ pub async fn login(
 
     let token = generate_session_token();
     let expires_at = chrono::Utc::now() + chrono::Duration::days(30);
-    sqlx::query("insert into sessions (token, user_id, expires_at) values ($1, $2, $3)")
-        .bind(&token)
+    sqlx::query("insert into sessions (token_hash, user_id, expires_at) values ($1, $2, $3)")
+        .bind(hash_token(&token))
         .bind(user_id)
         .bind(expires_at)
         .execute(&state.db)
@@ -55,8 +55,8 @@ pub async fn login(
 // wczesniej tylko czyscil localStorage po swojej stronie, wpis w bazie zyl dalej
 // az do wygasniecia (30 dni).
 pub async fn logout(State(state): State<AppState>, user: CurrentUser) -> Result<(), ApiError> {
-    sqlx::query("delete from sessions where token = $1")
-        .bind(&user.token)
+    sqlx::query("delete from sessions where token_hash = $1")
+        .bind(&user.token_hash)
         .execute(&state.db)
         .await?;
     Ok(())
@@ -92,20 +92,22 @@ mod tests {
         .unwrap();
 
         let token = hex::decode(&login_resp.0.token).unwrap();
+        let token_hash = hash_token(&token);
         let current = CurrentUser {
             id: user_id,
             username: "ktos".into(),
             role: Role::Member,
-            token: token.clone(),
+            token_hash: token_hash.clone(),
         };
 
         logout(State(state), current).await.unwrap();
 
-        let remaining: i64 = sqlx::query_scalar("select count(*) from sessions where token = $1")
-            .bind(&token)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+        let remaining: i64 =
+            sqlx::query_scalar("select count(*) from sessions where token_hash = $1")
+                .bind(&token_hash)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
         assert_eq!(remaining, 0);
     }
 }

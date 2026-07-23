@@ -6,13 +6,25 @@ use axum::middleware::Next;
 use axum::response::Response;
 use rand::rngs::OsRng;
 use rand::RngCore;
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::error::ApiError;
 use crate::roles::Role;
 use crate::state::AppState;
 
+// Krotsze i puste hasla nie maja szans przetrwac nawet slownikowego zgadywania -
+// granica jest arbitralna, ale musi byc jakas (rozdz. 10.2 planu wymaga "panelu
+// z uwierzytelnianiem", nie okresla dlugosci, wiec przyjmujemy rozsadne minimum).
+const MIN_PASSWORD_LEN: usize = 8;
+
 pub fn hash_password(plain: &str) -> Result<String, ApiError> {
+    if plain.chars().count() < MIN_PASSWORD_LEN {
+        return Err(ApiError::BadRequest(format!(
+            "haslo musi miec co najmniej {MIN_PASSWORD_LEN} znakow"
+        )));
+    }
+
     let salt = SaltString::generate(&mut OsRng);
     Argon2::default()
         .hash_password(plain.as_bytes(), &salt)
@@ -31,11 +43,20 @@ pub fn verify_password(plain: &str, hash: &str) -> bool {
 
 // 32 losowe bajty, nosimy jako hex w naglowku Authorization - ten sam wzorzec co
 // bearer token administratora w /server (patrz server/src/auth.rs), tylko per-uzytkownik
-// i trzymany w tabeli sessions zamiast jednego statycznego tokena w env.
+// i trzymany (jako hash, patrz hash_token) w tabeli sessions zamiast jednego
+// statycznego tokena w env.
 pub fn generate_session_token() -> Vec<u8> {
     let mut buf = [0u8; 32];
     OsRng.fill_bytes(&mut buf);
     buf.to_vec()
+}
+
+// W bazie lezy tylko SHA-256 z tokena, nigdy sam token - wyciek bazy/backupu nie
+// powinien dawac gotowego dostepu do zadnej sesji (migracja 0003, patrz komentarz tam).
+pub fn hash_token(token: &[u8]) -> Vec<u8> {
+    let mut hasher = Sha256::new();
+    hasher.update(token);
+    hasher.finalize().to_vec()
 }
 
 #[derive(Debug, Clone)]
@@ -43,9 +64,9 @@ pub struct CurrentUser {
     pub id: Uuid,
     pub username: String,
     pub role: Role,
-    // token sesji tego zadania - potrzebny tylko zeby logout() mogl usunac
-    // dokladnie ta jedna sesje, nie wszystkie sesje uzytkownika
-    pub token: Vec<u8>,
+    // hash tokena tej sesji (nie sam token) - potrzebny zeby logout() mogl usunac
+    // dokladnie ten jeden wiersz w sessions, nie wszystkie sesje uzytkownika
+    pub token_hash: Vec<u8>,
 }
 
 impl CurrentUser {
@@ -87,13 +108,14 @@ pub async fn require_session(
         .ok_or(ApiError::Unauthorized)?;
 
     let token = hex::decode(token_hex).map_err(|_| ApiError::Unauthorized)?;
+    let token_hash = hash_token(&token);
 
     let row = sqlx::query_as::<_, (Uuid, String, Role)>(
         "select users.id, users.username, users.role
          from sessions join users on users.id = sessions.user_id
-         where sessions.token = $1 and sessions.expires_at > now()",
+         where sessions.token_hash = $1 and sessions.expires_at > now()",
     )
-    .bind(&token)
+    .bind(&token_hash)
     .fetch_optional(&state.db)
     .await?;
 
@@ -102,7 +124,7 @@ pub async fn require_session(
         id,
         username,
         role,
-        token,
+        token_hash,
     });
 
     Ok(next.run(req).await)
@@ -130,5 +152,27 @@ mod tests {
         let b = generate_session_token();
         assert_eq!(a.len(), 32);
         assert_ne!(a, b);
+    }
+
+    #[test]
+    fn rejects_too_short_password() {
+        assert!(matches!(
+            hash_password("krotkie"),
+            Err(ApiError::BadRequest(_))
+        ));
+    }
+
+    #[test]
+    fn accepts_password_at_minimum_length() {
+        assert!(hash_password("dokladnie8").is_ok());
+    }
+
+    #[test]
+    fn token_hash_is_deterministic_and_not_the_token_itself() {
+        let token = generate_session_token();
+        let hash_a = hash_token(&token);
+        let hash_b = hash_token(&token);
+        assert_eq!(hash_a, hash_b);
+        assert_ne!(hash_a, token);
     }
 }

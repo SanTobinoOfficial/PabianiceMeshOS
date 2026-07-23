@@ -98,6 +98,43 @@ pub async fn set_role(
     Ok(())
 }
 
+#[derive(Deserialize)]
+pub struct ResetPasswordReq {
+    pub password: String,
+}
+
+// Jedyna sciezka odzyskania konta w tym szkielecie - nie ma samoobslugowego
+// "zapomnialem hasla" (wymagaloby wysylki maili, ktorych ten serwer nie wysyla).
+// Zmiana hasla uniewaznia od razu wszystkie dotychczasowe sesje tego uzytkownika -
+// stary token nie powinien dalej dzialac, gdyby to admin resetowal po przejeciu konta.
+pub async fn reset_password(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(target_id): Path<Uuid>,
+    Json(req): Json<ResetPasswordReq>,
+) -> Result<(), ApiError> {
+    user.require(Role::Admin)?;
+
+    let password_hash = hash_password(&req.password)?;
+
+    let result = sqlx::query("update users set password_hash = $1 where id = $2")
+        .bind(password_hash)
+        .bind(target_id)
+        .execute(&state.db)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound);
+    }
+
+    sqlx::query("delete from sessions where user_id = $1")
+        .bind(target_id)
+        .execute(&state.db)
+        .await?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -108,7 +145,7 @@ mod tests {
             id: Uuid::new_v4(),
             username: "admin".into(),
             role: Role::Admin,
-            token: vec![],
+            token_hash: vec![],
         }
     }
 
@@ -117,7 +154,7 @@ mod tests {
             id: Uuid::new_v4(),
             username: "czlonek".into(),
             role: Role::Member,
-            token: vec![],
+            token_hash: vec![],
         }
     }
 
@@ -156,5 +193,53 @@ mod tests {
             .unwrap();
         let second = create_user(State(state), admin_user(), Json(req("duplikat"))).await;
         assert!(matches!(second, Err(ApiError::Conflict)));
+    }
+
+    #[sqlx::test]
+    async fn admin_reset_password_changes_hash_and_kills_sessions(pool: PgPool) {
+        let state = AppState { db: pool.clone() };
+        let created = create_user(
+            State(state.clone()),
+            admin_user(),
+            Json(req("zapominalski")),
+        )
+        .await
+        .unwrap();
+
+        sqlx::query(
+            "insert into sessions (token_hash, user_id, expires_at)
+             values ($1, $2, now() + interval '30 days')",
+        )
+        .bind(vec![0u8; 32])
+        .bind(created.0.id)
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        reset_password(
+            State(state),
+            admin_user(),
+            Path(created.0.id),
+            Json(ResetPasswordReq {
+                password: "nowe-haslo-123".into(),
+            }),
+        )
+        .await
+        .unwrap();
+
+        let new_hash: String = sqlx::query_scalar("select password_hash from users where id = $1")
+            .bind(created.0.id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert!(crate::auth::verify_password("nowe-haslo-123", &new_hash));
+
+        let remaining_sessions: i64 =
+            sqlx::query_scalar("select count(*) from sessions where user_id = $1")
+                .bind(created.0.id)
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(remaining_sessions, 0);
     }
 }

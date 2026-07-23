@@ -105,7 +105,7 @@ mod tests {
             id,
             username: "test".into(),
             role,
-            token: vec![],
+            token_hash: vec![],
         }
     }
 

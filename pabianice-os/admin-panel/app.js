@@ -190,19 +190,38 @@ document.getElementById("new-channel-btn").addEventListener("click", async () =>
     await loadChannels();
 });
 
-document.getElementById("show-users-btn").addEventListener("click", async () => {
+document.getElementById("show-users-btn").addEventListener("click", showUsers);
+
+async function showUsers() {
     const users = await api("/v1/users");
     const main = document.getElementById("main-panel");
     main.innerHTML = `
         <h2>Użytkownicy</h2>
         <table>
-            <thead><tr><th>Nazwa</th><th>Rola</th></tr></thead>
+            <thead><tr><th>Nazwa</th><th>Rola</th><th></th></tr></thead>
             <tbody>${users
-                .map((u) => `<tr><td>${escapeHtml(u.username)}</td><td>${u.role}</td></tr>`)
+                .map(
+                    (u) => `<tr>
+                        <td>${escapeHtml(u.username)}</td>
+                        <td>${u.role}</td>
+                        <td><button class="secondary reset-password-btn" data-user-id="${u.id}" data-username="${escapeHtml(u.username)}">Resetuj hasło</button></td>
+                    </tr>`,
+                )
                 .join("")}</tbody>
         </table>
     `;
-});
+    for (const btn of main.querySelectorAll(".reset-password-btn")) {
+        btn.addEventListener("click", async () => {
+            const newPassword = prompt(`Nowe hasło dla ${btn.dataset.username} (min. 8 znaków):`);
+            if (!newPassword) return;
+            await api(`/v1/users/${btn.dataset.userId}/password`, {
+                method: "PUT",
+                body: JSON.stringify({ password: newPassword }),
+            });
+            alert("Hasło zmienione, poprzednie sesje tego użytkownika zostały zakończone.");
+        });
+    }
+}
 
 document.getElementById("show-settings-btn").addEventListener("click", async () => {
     const settings = await api("/v1/admin/settings");

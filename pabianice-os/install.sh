@@ -30,6 +30,10 @@ fi
 read -rp "Port na ktorym ma nasluchiwac serwer [8081]: " BIND_PORT
 BIND_PORT=${BIND_PORT:-8081}
 
+echo
+echo "Logowanie wysyla haslo w body requestu - bez TLS leci jawnym tekstem po sieci."
+read -rp "Domena wskazujaca na ten serwer (zostaw puste = sam HTTP, np. test w LAN): " DOMAIN
+
 INSTALL_DIR=/opt/pabianice-os
 DB_NAME=pabianice_os
 DB_USER=pabianice_os
@@ -58,9 +62,17 @@ mkdir -p "${INSTALL_DIR}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cp -r "${SCRIPT_DIR}/server" "${SCRIPT_DIR}/admin-panel" "${INSTALL_DIR}/"
 
+# Jesli stawiamy Caddy z TLS przed serwerem, on sam ma byc jedynym punktem
+# wejscia z zewnatrz - serwer nasluchuje tylko na localhost, nie 0.0.0.0.
+if [[ -n "$DOMAIN" ]]; then
+    APP_BIND_ADDR="127.0.0.1:${BIND_PORT}"
+else
+    APP_BIND_ADDR="0.0.0.0:${BIND_PORT}"
+fi
+
 cat > "${INSTALL_DIR}/server/.env" <<EOF
 DATABASE_URL=postgres://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}
-BIND_ADDR=0.0.0.0:${BIND_PORT}
+BIND_ADDR=${APP_BIND_ADDR}
 RUST_LOG=info
 ADMIN_BOOTSTRAP_USERNAME=${ADMIN_USER}
 ADMIN_BOOTSTRAP_PASSWORD=${ADMIN_PASS}
@@ -92,8 +104,36 @@ EOF
 systemctl daemon-reload
 systemctl enable --now pabianice-os
 
+if [[ -n "$DOMAIN" ]]; then
+    echo "-- Caddy (reverse proxy + automatyczny TLS) --"
+    if ! command -v caddy >/dev/null; then
+        apt-get install -y -qq debian-keyring debian-archive-keyring apt-transport-https
+        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+            | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+            | tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
+        apt-get update -qq
+        apt-get install -y -qq caddy
+    fi
+
+    cat > /etc/caddy/Caddyfile <<EOF
+${DOMAIN} {
+    reverse_proxy 127.0.0.1:${BIND_PORT}
+}
+EOF
+    systemctl reload caddy 2>/dev/null || systemctl restart caddy
+    PANEL_URL="https://${DOMAIN}/"
+else
+    PANEL_URL="http://$(hostname -I | awk '{print $1}'):${BIND_PORT}/"
+    echo
+    echo "UWAGA: bez domeny panel dziala po zwyklym HTTP - haslo przy logowaniu"
+    echo "leci jawnym tekstem po sieci. OK do testu w zaufanym LAN, nie do"
+    echo "wystawienia w internecie. Odpal ten skrypt ponownie z domena, albo"
+    echo "postaw wlasny reverse proxy z TLS, zanim udostepnisz to komukolwiek."
+fi
+
 echo
 echo "== Gotowe =="
-echo "Panel: http://$(hostname -I | awk '{print $1}'):${BIND_PORT}/"
+echo "Panel: ${PANEL_URL}"
 echo "Zaloguj sie jako '${ADMIN_USER}' haslem ktore podales wyzej."
 echo "Status: systemctl status pabianice-os"

@@ -15,12 +15,16 @@ Działający szkielet - konta, role, kanały, wiadomości, panel admina, wszystk
 realnie skompilowane i przetestowane (`cargo test`, `cargo clippy -D warnings`):
 
 - **Konta i role** (`server/src/roles.rs`, `server/src/auth.rs`) - trzy poziomy
-  (member/moderator/admin), hasła hashowane Argon2, sesje jako losowy bearer
-  token w tabeli `sessions` (nie JWT - prościej, łatwiej unieważnić pojedynczą
-  sesję - `POST /v1/auth/logout` faktycznie usuwa ją z bazy, nie tylko czyści
-  `localStorage` po stronie panelu). Brak publicznej samorejestracji - konta
-  zakłada administrator (`POST /v1/users`), pierwsze konto powstaje automatycznie
-  przy pierwszym starcie z `ADMIN_BOOTSTRAP_USERNAME`/`ADMIN_BOOTSTRAP_PASSWORD`.
+  (member/moderator/admin), hasła hashowane Argon2 (min. 8 znaków, wymuszane w
+  `hash_password`), sesje jako losowy bearer token, w bazie trzymany tylko jako
+  SHA-256 (`sessions.token_hash`, migracja 0003) - wyciek bazy/backupu nie daje
+  gotowego dostępu do żadnej sesji. `POST /v1/auth/logout` faktycznie usuwa sesję
+  z bazy, nie tylko czyści `localStorage` po stronie panelu. Brak publicznej
+  samorejestracji - konta zakłada administrator (`POST /v1/users`), pierwsze
+  konto powstaje automatycznie przy pierwszym starcie z
+  `ADMIN_BOOTSTRAP_USERNAME`/`ADMIN_BOOTSTRAP_PASSWORD`. Zapomniane hasło resetuje
+  admin (`PUT /v1/users/:id/password`) - jedyna ścieżka odzyskania konta, bo nie ma
+  tu wysyłki maili.
 - **Kategorie i kanały** (`server/src/routes/channels.rs`) - płaska struktura,
   tworzenie/usuwanie wymaga roli admin.
 - **Wiadomości kanałowe** (`server/src/routes/messages.rs`) - pisanie wymaga
@@ -74,10 +78,15 @@ Panel dostępny pod `http://localhost:8081/` (serwowany z `../admin-panel`, patr
 sudo ./install.sh
 ```
 
-Pyta o konto administratora i port, instaluje Postgresa i Rusta jeśli brakuje,
-buduje serwer, stawia systemd unit (`pabianice-os.service`) i odpala go. Alpine
-Linux z planu (rozdz. 10.3) na razie nieobsłużone - inny menedżer pakietów i init,
-do dopisania jeśli ktoś tego faktycznie potrzebuje.
+Pyta o konto administratora, port i (opcjonalnie) domenę. Instaluje Postgresa i
+Rusta jeśli brakuje, buduje serwer, stawia systemd unit (`pabianice-os.service`)
+i odpala go. Jeśli podasz domenę - stawia też Caddy jako reverse proxy z
+automatycznym TLS (Let's Encrypt) i przełącza serwer na nasłuch tylko po
+`127.0.0.1` (Caddy jest wtedy jedynym punktem wejścia z zewnątrz). Bez domeny
+panel działa po zwykłym HTTP - dobre do testu w zaufanym LAN, nie do wystawienia
+publicznie (hasło przy logowaniu leciałoby jawnym tekstem). Alpine Linux z planu
+(rozdz. 10.3) na razie nieobsłużone - inny menedżer pakietów i init, do dopisania
+jeśli ktoś tego faktycznie potrzebuje.
 
 ## Federacja - status
 
@@ -110,6 +119,7 @@ pracy, celowo odłożony - fundament (konta/role/kanały) musiał powstać pierw
 | POST | `/v1/auth/logout` | dowolny zalogowany (usuwa własną sesję) |
 | GET/POST | `/v1/users` | moderator (GET) / admin (POST) |
 | PUT | `/v1/users/:id/role` | admin |
+| PUT | `/v1/users/:id/password` | admin (reset hasła, kończy wszystkie sesje danego usera) |
 | GET/POST | `/v1/categories` | dowolny zalogowany (GET) / admin (POST) |
 | GET/POST | `/v1/channels` | dowolny zalogowany (GET) / admin (POST) |
 | DELETE | `/v1/channels/:id` | admin |
