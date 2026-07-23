@@ -16,13 +16,17 @@
 #define PKT_TTL_DEFAULT  8
 
 typedef enum {
-    PKT_TYPE_DATA   = 0x01,
-    PKT_TYPE_BEACON = 0x02,
+    PKT_TYPE_DATA       = 0x01,
+    PKT_TYPE_BEACON     = 0x02,
+    PKT_TYPE_KEY_BUNDLE = 0x03, // wymiana kluczy X3DH miedzy sasiadami, patrz mesh.c
 } pkt_type_t;
 
-// Format ramki wg rozdz. 5.3 planu. Signature jest na razie zerowane - podpisu nie
-// mamy czym policzyc dopoki nie dojdzie warstwa kryptograficzna (krok 2), ale pole
-// zostaje w nagłówku od razu, zeby pozniej nie zmieniac formatu ramki drugi raz.
+// Format ramki wg rozdz. 5.3 planu. Payload DATA to teraz prawdziwy ciphertext Signal
+// Protocol (X3DH + Double Ratchet, components/crypto) - integralnosc/autentycznosc
+// tresci pilnuje juz MAC w samej ramce Double Ratchet. Signature tutaj to osobna
+// sprawa: podpis calego pakietu na poziomie warstwy transmisyjnej (rozdz. 6.3 planu,
+// klucz sieci wspolny dla mesh, nie klucz uzytkownika) - jeszcze nie zaimplementowany,
+// na razie zerowany.
 typedef struct __attribute__((packed)) {
     uint8_t  type;
     uint8_t  msg_id[PKT_MSG_ID_LEN];

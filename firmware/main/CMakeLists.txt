@@ -1,5 +1,5 @@
 idf_component_register(
     SRCS "main.c"
     INCLUDE_DIRS "."
-    REQUIRES board radio mesh
+    REQUIRES board radio mesh nvs_flash
 )
