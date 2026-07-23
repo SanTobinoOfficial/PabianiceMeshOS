@@ -28,7 +28,10 @@ pub fn router(state: AppState) -> Router {
             axum::routing::post(messages::submit_message),
         )
         .route("/v1/messages/:node_id", get(messages::poll_messages))
-        .route("/v1/messages/id/:id", delete(messages::ack_message))
+        .route(
+            "/v1/messages/:node_id/id/:id",
+            delete(messages::ack_message),
+        )
         .merge(admin_routes)
         .with_state(state)
 }

@@ -141,3 +141,72 @@ pub async fn get_bundle(
         }),
     }))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::test_state;
+    use sqlx::PgPool;
+
+    fn bundle_req(one_time_prekeys: Vec<OneTimePrekeyIn>) -> PublishBundleReq {
+        PublishBundleReq {
+            identity_pub: "aa".repeat(32),
+            registration_id: 1,
+            signed_prekey_id: 1,
+            signed_prekey_pub: "bb".repeat(32),
+            signed_prekey_sig: "cc".repeat(64),
+            one_time_prekeys,
+        }
+    }
+
+    #[sqlx::test]
+    async fn publish_then_get_bundle_roundtrip(pool: PgPool) {
+        let state = test_state(pool).await;
+        publish_bundle(
+            State(state.clone()),
+            Path("a4cf12b8aabb0000".into()),
+            Json(bundle_req(vec![])),
+        )
+        .await
+        .unwrap();
+
+        let resp = get_bundle(State(state), Path("a4cf12b8aabb0000".into()))
+            .await
+            .unwrap();
+        assert_eq!(resp.0.identity_pub, "aa".repeat(32));
+        assert_eq!(resp.0.registration_id, 1);
+        assert!(resp.0.one_time_prekey.is_none());
+    }
+
+    #[sqlx::test]
+    async fn get_bundle_for_unknown_node_is_not_found(pool: PgPool) {
+        let state = test_state(pool).await;
+        let result = get_bundle(State(state), Path("0000000000000000".into())).await;
+        assert!(matches!(result, Err(ApiError::NotFound)));
+    }
+
+    #[sqlx::test]
+    async fn one_time_prekey_is_consumed_exactly_once(pool: PgPool) {
+        let state = test_state(pool).await;
+        publish_bundle(
+            State(state.clone()),
+            Path("a4cf12b8aabb0000".into()),
+            Json(bundle_req(vec![OneTimePrekeyIn {
+                prekey_id: 7,
+                prekey_pub: "dd".repeat(32),
+            }])),
+        )
+        .await
+        .unwrap();
+
+        let first = get_bundle(State(state.clone()), Path("a4cf12b8aabb0000".into()))
+            .await
+            .unwrap();
+        assert!(first.0.one_time_prekey.is_some());
+
+        let second = get_bundle(State(state), Path("a4cf12b8aabb0000".into()))
+            .await
+            .unwrap();
+        assert!(second.0.one_time_prekey.is_none());
+    }
+}

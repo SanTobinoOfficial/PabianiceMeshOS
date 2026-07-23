@@ -1,6 +1,7 @@
 use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::Response;
+use subtle::ConstantTimeEq;
 
 use crate::error::ApiError;
 use crate::state::AppState;
@@ -20,8 +21,14 @@ pub async fn require_admin(
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Bearer "));
 
+    // staloczasowe porownanie - zwykle == na sekrecie potrafi zdradzic dlugosc
+    // wspolnego prefiksu przez czas odpowiedzi (timing attack), tanie zabezpieczenie
+    // nawet jesli w praktyce trudne do wykorzystania przez siec. ct_eq sam obsluguje
+    // rozne dlugosci (Choice::from(0)), bez wczesniejszego porownania dlugosci.
     match token {
-        Some(t) if t == state.admin_token => Ok(next.run(req).await),
+        Some(t) if bool::from(t.as_bytes().ct_eq(state.admin_token.as_bytes())) => {
+            Ok(next.run(req).await)
+        }
         _ => Err(ApiError::Unauthorized),
     }
 }

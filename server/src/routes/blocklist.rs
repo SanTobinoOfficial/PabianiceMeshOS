@@ -70,3 +70,65 @@ pub async fn list_blocked(
             .collect(),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::state::test_state;
+    use sqlx::PgPool;
+
+    #[sqlx::test]
+    async fn block_then_list_then_unblock(pool: PgPool) {
+        let state = test_state(pool).await;
+        let hwid = "aabbccdd11223344";
+
+        block_device(
+            State(state.clone()),
+            Path(hwid.into()),
+            Json(BlockReq {
+                reason: Some("test".into()),
+            }),
+        )
+        .await
+        .unwrap();
+
+        let listed = list_blocked(State(state.clone())).await.unwrap();
+        assert_eq!(listed.0.len(), 1);
+        assert_eq!(listed.0[0].hwid, hwid);
+        assert_eq!(listed.0[0].reason.as_deref(), Some("test"));
+
+        unblock_device(State(state.clone()), Path(hwid.into()))
+            .await
+            .unwrap();
+
+        let listed_after = list_blocked(State(state)).await.unwrap();
+        assert_eq!(listed_after.0.len(), 0);
+    }
+
+    #[sqlx::test]
+    async fn blocking_twice_updates_reason_instead_of_duplicating(pool: PgPool) {
+        let state = test_state(pool).await;
+        let hwid = "aabbccdd11223344";
+
+        block_device(
+            State(state.clone()),
+            Path(hwid.into()),
+            Json(BlockReq { reason: None }),
+        )
+        .await
+        .unwrap();
+        block_device(
+            State(state.clone()),
+            Path(hwid.into()),
+            Json(BlockReq {
+                reason: Some("drugi powod".into()),
+            }),
+        )
+        .await
+        .unwrap();
+
+        let listed = list_blocked(State(state)).await.unwrap();
+        assert_eq!(listed.0.len(), 1);
+        assert_eq!(listed.0[0].reason.as_deref(), Some("drugi powod"));
+    }
+}

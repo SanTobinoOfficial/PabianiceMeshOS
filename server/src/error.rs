@@ -13,6 +13,8 @@ pub enum ApiError {
     Blocked,
     #[error("brak albo zly token administratora")]
     Unauthorized,
+    #[error("za duzo wiadomosci od tego nadawcy, zwolnij")]
+    RateLimited,
     #[error("blad bazy danych")]
     Db(#[from] sqlx::Error),
 }
@@ -24,6 +26,7 @@ impl IntoResponse for ApiError {
             ApiError::BadRequest(_) => StatusCode::BAD_REQUEST,
             ApiError::Blocked => StatusCode::FORBIDDEN,
             ApiError::Unauthorized => StatusCode::UNAUTHORIZED,
+            ApiError::RateLimited => StatusCode::TOO_MANY_REQUESTS,
             ApiError::Db(e) => {
                 tracing::error!("db error: {e}");
                 StatusCode::INTERNAL_SERVER_ERROR
