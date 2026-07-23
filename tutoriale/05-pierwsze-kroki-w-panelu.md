@@ -39,9 +39,17 @@ curl -X POST http://TWOJ-SERWER/v1/channels \
 
 ## Dodawanie osób i zarządzanie rolami
 
-Kliknij **"Użytkownicy"** (widoczne tylko dla admina) - zobaczysz listę kont. Nowe
-konta zakłada się jednak na razie tylko przez API (panel nie ma jeszcze formularza
-"dodaj użytkownika" - to sam `POST /v1/users`):
+Kliknij **"Użytkownicy"** (widoczne tylko dla admina) - zobaczysz listę kont i
+formularz **"+ dodaj użytkownika"** (nazwa, hasło min. 8 znaków, rola) nad tabelą.
+Rolę każdego istniejącego konta zmieniasz od razu z listy rozwijanej w kolumnie
+"Rola" - zmiana zapisuje się natychmiast po wyborze, bez dodatkowego potwierdzania.
+
+Role to `member` (domyślna, może pisać tam gdzie próg kanału na to pozwala),
+`moderator` (dodatkowo widzi listę użytkowników i ustawienia serwera) i `admin`
+(wszystko, w tym tworzenie/kasowanie kanałów i zmiana ról).
+
+To samo da się zrobić przez API, przydatne np. do skryptów zakładających wiele
+kont naraz:
 
 ```bash
 curl -X POST http://TWOJ-SERWER/v1/users \
@@ -49,10 +57,6 @@ curl -X POST http://TWOJ-SERWER/v1/users \
   -H 'Content-Type: application/json' \
   -d '{"username": "kolega", "password": "jakies-haslo-min-8-znakow", "role": "member"}'
 ```
-
-Role to `member` (domyślna, może pisać tam gdzie próg kanału na to pozwala),
-`moderator` (dodatkowo widzi listę użytkowników i ustawienia serwera) i `admin`
-(wszystko, w tym tworzenie/kasowanie kanałów i zmiana ról).
 
 Jeśli ktoś zapomni hasła - w tabeli użytkowników przy każdym koncie jest przycisk
 **"Resetuj hasło"**. Wpisujesz nowe hasło (min. 8 znaków), zatwierdzasz - stare hasło

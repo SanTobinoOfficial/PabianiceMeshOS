@@ -33,7 +33,7 @@ button {
 button:hover { background: var(--accent-active); }
 button.secondary { background: transparent; border: 1px solid var(--hairline); color: var(--ink); }
 
-input, textarea {
+input, textarea, select {
     font-family: var(--mono);
     background: var(--panel);
     color: var(--ink);
@@ -41,6 +41,8 @@ input, textarea {
     border-radius: 6px;
     padding: 8px 10px;
 }
+
+.inline-form { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
 
 .hint { color: var(--mute); font-size: 0.9em; }
 .error { color: var(--danger); min-height: 1.2em; }

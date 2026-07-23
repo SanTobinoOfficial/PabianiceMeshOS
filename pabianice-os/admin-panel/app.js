@@ -214,24 +214,67 @@ document.getElementById("new-category-btn").addEventListener("click", async () =
 
 document.getElementById("show-users-btn").addEventListener("click", showUsers);
 
+const ROLES = ["member", "moderator", "admin"];
+
+function roleOptionsHtml(selected) {
+    return ROLES.map((r) => `<option value="${r}"${r === selected ? " selected" : ""}>${r}</option>`).join("");
+}
+
 async function showUsers() {
     const users = await api("/v1/users");
     const main = document.getElementById("main-panel");
     main.innerHTML = `
         <h2>Użytkownicy</h2>
+        <form id="new-user-form" class="inline-form">
+            <input id="new-user-username" placeholder="nazwa użytkownika" required>
+            <input id="new-user-password" type="password" placeholder="hasło (min. 8 znaków)" required minlength="8">
+            <select id="new-user-role">${roleOptionsHtml("member")}</select>
+            <button type="submit">+ dodaj użytkownika</button>
+        </form>
         <table>
             <thead><tr><th>Nazwa</th><th>Rola</th><th></th></tr></thead>
             <tbody>${users
                 .map(
                     (u) => `<tr>
                         <td>${escapeHtml(u.username)}</td>
-                        <td>${u.role}</td>
+                        <td><select class="role-select" data-user-id="${u.id}">${roleOptionsHtml(u.role)}</select></td>
                         <td><button class="secondary reset-password-btn" data-user-id="${u.id}" data-username="${escapeHtml(u.username)}">Resetuj hasło</button></td>
                     </tr>`,
                 )
                 .join("")}</tbody>
         </table>
     `;
+
+    document.getElementById("new-user-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const username = document.getElementById("new-user-username").value.trim();
+        const password = document.getElementById("new-user-password").value;
+        const role = document.getElementById("new-user-role").value;
+        if (!username || !password) return;
+        try {
+            await api("/v1/users", { method: "POST", body: JSON.stringify({ username, password, role }) });
+            await showUsers();
+        } catch (err) {
+            alert(`Nie udało się dodać użytkownika: ${err.message}`);
+        }
+    });
+
+    for (const select of main.querySelectorAll(".role-select")) {
+        select.addEventListener("change", async () => {
+            const previous = select.dataset.previousValue || select.value;
+            try {
+                await api(`/v1/users/${select.dataset.userId}/role`, {
+                    method: "PUT",
+                    body: JSON.stringify({ role: select.value }),
+                });
+                select.dataset.previousValue = select.value;
+            } catch (err) {
+                alert(`Nie udało się zmienić roli: ${err.message}`);
+                select.value = previous;
+            }
+        });
+    }
+
     for (const btn of main.querySelectorAll(".reset-password-btn")) {
         btn.addEventListener("click", async () => {
             const newPassword = prompt(`Nowe hasło dla ${btn.dataset.username} (min. 8 znaków):`);
