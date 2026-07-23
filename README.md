@@ -90,6 +90,7 @@ odwołuje: kod zostaje otwarty, także w formach pochodnych. Chcesz pomóc? Zoba
 
 ## Strona i community
 
-Strona projektu: `website/` (wdrażana automatycznie na GitHub Pages).
+Strona projektu: **https://santobinoofficial.github.io/PabianiceMeshOS/** (źródło w
+`website/`, deploy automatyczny na branch `gh-pages` przy każdym pushu).
 Pytania, pomysły, pokazywanie zbudowanych węzłów →
 [GitHub Discussions](https://github.com/SanTobinoOfficial/PabianiceMeshOS/discussions).
