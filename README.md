@@ -15,10 +15,11 @@ kalkulacja pokrycia miasta, fazy wdrożenia).
 
 Wczesny etap — Faza 1 z planu wdrożenia (prototyp dla wąskiego grona znajomych,
 zero zobowiązań prawnych). Gotowe: warstwa radiowa, routing mesh (flooding/TTL/dedup/
-rate-limit), szyfrowanie end-to-end (Signal Protocol, `firmware/components/crypto`) oraz
-szkielet serwera store-and-forward + katalogu kluczy (`/server`, Rust/Axum/Postgres/Redis).
+rate-limit), szyfrowanie end-to-end (Signal Protocol, `firmware/components/crypto`),
+szkielet serwera store-and-forward + katalogu kluczy (`/server`, Rust/Axum/Postgres/Redis)
+oraz szkielet Pabianice OS — serwera kanałów z kontami/rolami i panelem admina
+(`/pabianice-os`, patrz `pabianice-os/README.md` co dokładnie działa i czego brakuje).
 Klucze na razie leżą w NVS, nie w module bezpiecznym — patrz `firmware/README.md`.
-Serwer nie ma jeszcze autoryzacji panelu admina — patrz `server/README.md`.
 
 **To jeszcze nie jest gotowy produkt.** Nie ma tu żadnej certyfikacji CE/RED, nie ma
 gwarancji bezpieczeństwa. Jeśli budujesz własne urządzenie — sprawdź lokalne limity
@@ -54,9 +55,10 @@ model co w Signalu i Meshtastic.
   routing/TTL/dedup, rate-limiting, znane ograniczenia), pełny plan projektu.
 - `hardware/` — schematy, BOM, pliki STL obudowy.
 - `tutoriale/` — instrukcje krok po kroku dla ludzi, którzy chcą sami zbudować węzeł.
-- `pabianice-os/` — (docelowo, po ustabilizowaniu reszty) dystrybucja Linux do
-  self-hostingu własnego serwera z kanałami i panelem admina, z opcjonalną,
-  domyślnie wyłączoną federacją z siecią główną.
+- `pabianice-os/` — dystrybucja do self-hostingu własnego serwera z kanałami,
+  rolami i panelem admina (Rust/Axum/Postgres, panel admina jako statyczny
+  HTML/JS), z opcjonalną, domyślnie wyłączoną federacją z siecią główną. Osobny
+  produkt od `/server` — patrz `pabianice-os/README.md`.
 
 ## Plan wdrożenia
 

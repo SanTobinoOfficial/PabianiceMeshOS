@@ -1,5 +1,6 @@
-# Rust (/server)
+# Rust (/server, /pabianice-os/server)
 server/target/
+pabianice-os/server/target/
 **/*.rs.bk
 
 # ESP-IDF (/firmware)

@@ -1,0 +1,118 @@
+# Pabianice OS
+
+Dystrybucja do samodzielnego hostingu własnego serwera z kanałami tekstowymi,
+rolami i panelem administracyjnym - analogicznie funkcjonalnie do serwera Discorda,
+ale z opcjonalną (domyślnie wyłączoną) federacją z siecią główną Pabianice Comms
+przez radio mesh albo internet. Rozdz. 10.3-10.4 pełnego planu w `docs/`.
+
+To jest osobny produkt od `/server` (który jest DM store-and-forward + katalog
+kluczy dla głównej sieci mesh, patrz `server/README.md`) - operator stawia to u
+siebie dla swojej społeczności, niezależnie od głównej sieci projektu.
+
+## Stan na teraz
+
+Działający szkielet - konta, role, kanały, wiadomości, panel admina, wszystko
+realnie skompilowane i przetestowane (`cargo test`, `cargo clippy -D warnings`):
+
+- **Konta i role** (`server/src/roles.rs`, `server/src/auth.rs`) - trzy poziomy
+  (member/moderator/admin), hasła hashowane Argon2, sesje jako losowy bearer
+  token w tabeli `sessions` (nie JWT - prościej, łatwiej unieważnić pojedynczą
+  sesję przez `delete from sessions`). Brak publicznej samorejestracji - konta
+  zakłada administrator (`POST /v1/users`), pierwsze konto powstaje automatycznie
+  przy pierwszym starcie z `ADMIN_BOOTSTRAP_USERNAME`/`ADMIN_BOOTSTRAP_PASSWORD`.
+- **Kategorie i kanały** (`server/src/routes/channels.rs`) - płaska struktura,
+  tworzenie/usuwanie wymaga roli admin.
+- **Wiadomości kanałowe** (`server/src/routes/messages.rs`) - każdy zalogowany
+  może pisać na każdym kanale w tym szkielecie (brak jeszcze uprawnień
+  per-kanał, patrz "Czego tu brakuje").
+- **Ustawienia serwera** (`server/src/routes/admin.rs`) - retencja wiadomości
+  (dni, 0 = bez limitu, niezależna od retencji `/server`) i przełącznik
+  federacji - **sama flaga, nie działający protokół**, patrz niżej.
+- **Panel admina** (`admin-panel/`) - statyczny HTML/CSS/vanilla JS, zero
+  zależności zewnętrznych, serwowany z tego samego procesu co API
+  (`tower-http::ServeDir`, patrz `server/src/routes/mod.rs`) - jeden port,
+  zero CORS. Świadome odejście od rekomendacji "React" z rozdz. 10.2/10.4.4
+  planu, w duchu reszty repo (`website/` też jest zero-dependency).
+- **Instalator** (`install.sh`) - Debian/Ubuntu: pakiety systemowe, Postgres,
+  Rust jeśli brakuje, build release, systemd unit, guided prompt na konto
+  administratora (analogicznie do modelu YunoHost z rozdz. 10.3 planu).
+
+## WAŻNA różnica modelu zaufania względem `/server`
+
+DM w głównej sieci mesh (`/server`) to zawsze ciphertext Signal Protocol -
+serwer nigdy nie widzi treści (zero-trust, rozdz. 4.3 planu). **Kanały tutaj
+NIE są (jeszcze) szyfrowane end-to-end** - grupowe szyfrowanie (coś w rodzaju
+Signal Sender Keys) to osobny, znacznie większy kawałek kryptografii, którego
+`libsignal-protocol-c` używany w firmware nie dostarcza gotowego, i który nie
+był jeszcze projektowany. Model zaufania kanałów jest więc na razie taki jak
+Discord/Matrix/Slack: **operator serwera widzi treść wiadomości na swoim
+serwerze**. To świadoma, udokumentowana różnica, nie przeoczenie - jeśli
+kiedyś dojdzie grupowe E2E, to osobny, duży projekt.
+
+Kolumna `identity_pub` w tabeli `users` istnieje (ta sama tożsamość kryptograficzna
+co w mesh, rozdz. 10.4.1 planu), ale nic jeszcze jej realnie nie używa poza
+przechowaniem - to zadel pod przyszłą integrację, nie działająca funkcja.
+
+## Uruchomienie lokalnie (dev)
+
+```bash
+cd pabianice-os/server
+cp .env.example .env
+docker compose up -d          # Postgres na porcie 5433 (inny niz /server, zeby oba dzialaly naraz)
+cargo run                     # migracje leca automatycznie, potem bootstrap pierwszego admina
+```
+
+Panel dostępny pod `http://localhost:8081/` (serwowany z `../admin-panel`, patrz
+`ADMIN_PANEL_DIR` w `.env.example`).
+
+## Instalacja produkcyjna (Debian/Ubuntu)
+
+```bash
+sudo ./install.sh
+```
+
+Pyta o konto administratora i port, instaluje Postgresa i Rusta jeśli brakuje,
+buduje serwer, stawia systemd unit (`pabianice-os.service`) i odpala go. Alpine
+Linux z planu (rozdz. 10.3) na razie nieobsłużone - inny menedżer pakietów i init,
+do dopisania jeśli ktoś tego faktycznie potrzebuje.
+
+## Federacja - status
+
+Rozdz. 10.4.2-10.4.3 planu opisuje model: każdy serwer w pełni samodzielny,
+federacja z siecią główną opcjonalna i domyślnie wyłączona, z jasnym ekranem
+zgody przy włączaniu (konsekwencje RODO - włączenie robi z administratora
+głównej sieci współadministratora danych w rozumieniu RODO dla tego zakresu).
+
+W tym szkielecie `federation_enabled` to tylko kolumna w `server_settings` -
+**żaden protokół synchronizacji między serwerami nie jest zaimplementowany**.
+Włączenie przełącznika w panelu niczego jeszcze funkcjonalnie nie zmienia.
+Zaprojektowanie samego protokołu federacji (format wymiany, uwierzytelnianie
+serwer-serwer, ekran zgody z konsekwencjami RODO) to osobny, spory kawałek
+pracy, celowo odłożony - fundament (konta/role/kanały) musiał powstać pierwszy.
+
+## Czego tu jeszcze brakuje
+
+- Protokołu federacji (patrz wyżej) - na razie tylko flaga w bazie.
+- Uprawnień per-kanał (kto może pisać/czytać na którym kanale) - na razie
+  każdy zalogowany może pisać wszędzie, tylko admin może tworzyć/usuwać kanały.
+- Grupowego szyfrowania E2E kanałów (patrz "różnica modelu zaufania" wyżej).
+- Realnej integracji `identity_pub` z resztą systemu (na razie tylko kolumna).
+- Automatycznego czyszczenia wg `message_retention_days` - ustawienie się
+  zapisuje, ale nic jeszcze go nie egzekwuje (brak odpowiednika
+  `server/src/retention.rs`).
+- Wsparcia Alpine Linux w `install.sh`.
+- Testów integracyjnych względem realnej bazy (na razie tylko testy
+  jednostkowe logiki ról i hashowania haseł, bez bazy).
+
+## Endpointy (v1)
+
+| Metoda | Ścieżka | Rola |
+|---|---|---|
+| POST | `/v1/auth/login` | - |
+| GET/POST | `/v1/users` | moderator (GET) / admin (POST) |
+| PUT | `/v1/users/:id/role` | admin |
+| GET/POST | `/v1/categories` | dowolny zalogowany (GET) / admin (POST) |
+| GET/POST | `/v1/channels` | dowolny zalogowany (GET) / admin (POST) |
+| DELETE | `/v1/channels/:id` | admin |
+| GET/POST | `/v1/channels/:id/messages` | dowolny zalogowany |
+| GET/PUT | `/v1/admin/settings` | moderator (GET) / admin (PUT) |

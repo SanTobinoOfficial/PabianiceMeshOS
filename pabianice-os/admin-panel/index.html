@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pabianice OS - panel</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="login-screen">
+  <form id="login-form">
+    <h1>Pabianice OS</h1>
+    <p class="hint">Panel administracyjny serwera kanałów.</p>
+    <label>Nazwa użytkownika<input type="text" id="login-username" required autocomplete="username"></label>
+    <label>Hasło<input type="password" id="login-password" required autocomplete="current-password"></label>
+    <button type="submit">Zaloguj</button>
+    <p id="login-error" class="error"></p>
+  </form>
+</div>
+
+<div id="app-screen" hidden>
+  <div class="topbar">
+    <span class="brand">Pabianice OS</span>
+    <span id="whoami"></span>
+    <button id="logout-btn">Wyloguj</button>
+  </div>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <div class="sidebar-section">
+        <h2>Kanały</h2>
+        <ul id="channel-list"></ul>
+        <button id="new-channel-btn" class="admin-only" hidden>+ kanał</button>
+      </div>
+      <div class="sidebar-section">
+        <button id="show-users-btn" class="admin-only" hidden>Użytkownicy</button>
+        <button id="show-settings-btn" class="mod-only" hidden>Ustawienia serwera</button>
+      </div>
+    </nav>
+
+    <main id="main-panel">
+      <p class="hint">Wybierz kanał z listy po lewej.</p>
+    </main>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
