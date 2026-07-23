@@ -50,7 +50,8 @@ model co w Signalu i Meshtastic.
 - `server/` — magazyn wiadomości store-and-forward + katalog kluczy publicznych
   (dochodzi w kroku 3).
 - `client/` — szkielet aplikacji mobilnej, na razie tylko interfejs BLE do urządzenia.
-- `docs/` — dokumentacja protokołu, format pakietów, diagramy, pełny plan projektu.
+- `docs/` — dokumentacja protokołu (`docs/protocol.md` — format ramki, typy pakietów,
+  routing/TTL/dedup, rate-limiting, znane ograniczenia), pełny plan projektu.
 - `hardware/` — schematy, BOM, pliki STL obudowy.
 - `tutoriale/` — instrukcje krok po kroku dla ludzi, którzy chcą sami zbudować węzeł.
 - `pabianice-os/` — (docelowo, po ustabilizowaniu reszty) dystrybucja Linux do
