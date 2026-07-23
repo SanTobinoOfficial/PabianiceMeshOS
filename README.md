@@ -15,9 +15,10 @@ kalkulacja pokrycia miasta, fazy wdrożenia).
 
 Wczesny etap — Faza 1 z planu wdrożenia (prototyp dla wąskiego grona znajomych,
 zero zobowiązań prawnych). Gotowe: warstwa radiowa, routing mesh (flooding/TTL/dedup/
-rate-limit) i szyfrowanie end-to-end (Signal Protocol, `firmware/components/crypto`).
+rate-limit), szyfrowanie end-to-end (Signal Protocol, `firmware/components/crypto`) oraz
+szkielet serwera store-and-forward + katalogu kluczy (`/server`, Rust/Axum/Postgres/Redis).
 Klucze na razie leżą w NVS, nie w module bezpiecznym — patrz `firmware/README.md`.
-Następny krok: magazyn wiadomości store-and-forward w `/server`.
+Serwer nie ma jeszcze autoryzacji panelu admina — patrz `server/README.md`.
 
 **To jeszcze nie jest gotowy produkt.** Nie ma tu żadnej certyfikacji CE/RED, nie ma
 gwarancji bezpieczeństwa. Jeśli budujesz własne urządzenie — sprawdź lokalne limity
