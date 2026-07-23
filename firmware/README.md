@@ -9,7 +9,8 @@ Warstwa radiowa (SX1262 po SPI) + routing mesh (flooding z TTL, tabela obecnośc
 deduplikacja po ID wiadomości, rate-limiting per nadawca) + szyfrowanie end-to-end
 (Signal Protocol - X3DH + Double Ratchet, przez `libsignal-protocol-c`). Wiadomości
 DATA sa juz szyfrowane; wymiana kluczy miedzy dwoma wezlami na razie idzie bezposrednio
-przez mesh (bez katalogu kluczy na serwerze - to dopiero krok 3).
+przez mesh (bez katalogu kluczy na serwerze - to dopiero krok 3). Format ramki i
+szczegóły routingu opisane w `docs/protocol.md`.
 
 ## Pobieranie (submoduly!)
 
