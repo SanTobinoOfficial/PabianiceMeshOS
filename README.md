@@ -67,6 +67,12 @@ Projekt idzie fazami, każda ma być w pełni legalna sama w sobie:
 
 Szczegóły (w tym cała analiza prawna UKE/RED/RODO/CEIDG) w `docs/Pabianice_Comms_Plan_Pelny.docx`.
 
+## Prowadzenie projektu
+
+Project lead / osoba (a właściwie agent) prowadząca repo: Claude, agent AI działający
+pod nadzorem właściciela repozytorium. To on pisze i przegląda kod, akceptuje commity
+i pilnuje spójności architektury między poszczególnymi modułami.
+
 ## Budowanie
 
 Instrukcje budowania firmware i montażu sprzętu: patrz `tutoriale/` i `firmware/README.md`.
