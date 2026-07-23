@@ -25,8 +25,8 @@ mocy nadawania (ERP) i duty cycle dla pasma ISM w swoim kraju, to twoja odpowied
 
 ## Jak to działa (w skrócie)
 
-1. Nadawca szyfruje wiadomość kluczem publicznym odbiorcy (docelowo — na razie krok 1
-   jest bez szyfrowania, żeby najpierw ogarnąć sam transport i routing).
+1. Nadawca szyfruje wiadomość kluczem publicznym odbiorcy (Signal Protocol — X3DH do
+   ustanowienia sesji + Double Ratchet do szyfrowania kolejnych wiadomości).
 2. Wiadomość trafia do najbliższego węzła w zasięgu radiowym, niezależnie czyją jest
    własnością.
 3. Węzeł sprawdza lokalną tabelę obecności — czy odbiorca był ostatnio widziany w jego
@@ -44,8 +44,8 @@ model co w Signalu i Meshtastic.
 ## Struktura repo
 
 - `firmware/` — kod ESP32-S3 (ESP-IDF, C). Warstwy: HAL/board, radio (SX1262 przez SPI),
-  mesh/routing (flooding + TTL, tabela obecności, dedup), docelowo crypto (libsignal)
-  i warstwa aplikacyjna.
+  mesh/routing (flooding + TTL, tabela obecności, dedup), crypto (Signal Protocol przez
+  libsignal-protocol-c) i warstwa aplikacyjna.
 - `server/` — magazyn wiadomości store-and-forward + katalog kluczy publicznych
   (dochodzi w kroku 3).
 - `client/` — szkielet aplikacji mobilnej, na razie tylko interfejs BLE do urządzenia.
@@ -68,6 +68,8 @@ Projekt idzie fazami, każda ma być w pełni legalna sama w sobie:
    działalności.
 
 Szczegóły (w tym cała analiza prawna UKE/RED/RODO/CEIDG) w `docs/Pabianice_Comms_Plan_Pelny.docx`.
+Szablony regulaminu i polityki prywatności pod Fazę 3 (jeszcze nie obowiązują) —
+`docs/legal/`.
 
 ## Prowadzenie projektu
 
