@@ -14,6 +14,7 @@ use crate::state::AppState;
 
 pub fn router(state: AppState, admin_panel_dir: &str) -> Router {
     let authenticated = Router::new()
+        .route("/v1/auth/logout", post(auth::logout))
         .route("/v1/users", get(users::list_users).post(users::create_user))
         .route("/v1/users/:id/role", put(users::set_role))
         .route(
@@ -25,6 +26,10 @@ pub fn router(state: AppState, admin_panel_dir: &str) -> Router {
             get(channels::list_channels).post(channels::create_channel),
         )
         .route("/v1/channels/:id", delete(channels::delete_channel))
+        .route(
+            "/v1/channels/:id/min-post-role",
+            put(channels::set_min_post_role),
+        )
         .route(
             "/v1/channels/:id/messages",
             get(messages::list_messages).post(messages::post_message),

@@ -43,6 +43,9 @@ pub struct CurrentUser {
     pub id: Uuid,
     pub username: String,
     pub role: Role,
+    // token sesji tego zadania - potrzebny tylko zeby logout() mogl usunac
+    // dokladnie ta jedna sesje, nie wszystkie sesje uzytkownika
+    pub token: Vec<u8>,
 }
 
 impl CurrentUser {
@@ -95,8 +98,12 @@ pub async fn require_session(
     .await?;
 
     let (id, username, role) = row.ok_or(ApiError::Unauthorized)?;
-    req.extensions_mut()
-        .insert(CurrentUser { id, username, role });
+    req.extensions_mut().insert(CurrentUser {
+        id,
+        username,
+        role,
+        token,
+    });
 
     Ok(next.run(req).await)
 }

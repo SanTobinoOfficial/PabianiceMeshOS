@@ -66,6 +66,7 @@ pub struct CreateChannelReq {
     pub category_id: Option<Uuid>,
     pub topic: Option<String>,
     pub position: Option<i32>,
+    pub min_post_role: Option<Role>,
 }
 
 #[derive(Serialize)]
@@ -75,6 +76,7 @@ pub struct ChannelResp {
     pub name: String,
     pub topic: Option<String>,
     pub position: i32,
+    pub min_post_role: Role,
 }
 
 pub async fn create_channel(
@@ -84,15 +86,18 @@ pub async fn create_channel(
 ) -> Result<Json<ChannelResp>, ApiError> {
     user.require(Role::Admin)?;
     let position = req.position.unwrap_or(0);
+    let min_post_role = req.min_post_role.unwrap_or(Role::Member);
 
     let id: Uuid = sqlx::query_scalar(
-        "insert into channels (category_id, name, topic, position) values ($1, $2, $3, $4)
+        "insert into channels (category_id, name, topic, position, min_post_role)
+         values ($1, $2, $3, $4, $5)
          returning id",
     )
     .bind(req.category_id)
     .bind(&req.name)
     .bind(&req.topic)
     .bind(position)
+    .bind(min_post_role)
     .fetch_one(&state.db)
     .await?;
 
@@ -102,6 +107,7 @@ pub async fn create_channel(
         name: req.name,
         topic: req.topic,
         position,
+        min_post_role,
     }))
 }
 
@@ -109,8 +115,8 @@ pub async fn list_channels(
     State(state): State<AppState>,
     _user: CurrentUser,
 ) -> Result<Json<Vec<ChannelResp>>, ApiError> {
-    let rows = sqlx::query_as::<_, (Uuid, Option<Uuid>, String, Option<String>, i32)>(
-        "select id, category_id, name, topic, position from channels
+    let rows = sqlx::query_as::<_, (Uuid, Option<Uuid>, String, Option<String>, i32, Role)>(
+        "select id, category_id, name, topic, position, min_post_role from channels
          order by position asc, name asc",
     )
     .fetch_all(&state.db)
@@ -118,13 +124,16 @@ pub async fn list_channels(
 
     Ok(Json(
         rows.into_iter()
-            .map(|(id, category_id, name, topic, position)| ChannelResp {
-                id,
-                category_id,
-                name,
-                topic,
-                position,
-            })
+            .map(
+                |(id, category_id, name, topic, position, min_post_role)| ChannelResp {
+                    id,
+                    category_id,
+                    name,
+                    topic,
+                    position,
+                    min_post_role,
+                },
+            )
             .collect(),
     ))
 }
@@ -137,6 +146,31 @@ pub async fn delete_channel(
     user.require(Role::Admin)?;
 
     let result = sqlx::query("delete from channels where id = $1")
+        .bind(channel_id)
+        .execute(&state.db)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound);
+    }
+    Ok(())
+}
+
+#[derive(Deserialize)]
+pub struct SetMinPostRoleReq {
+    pub min_post_role: Role,
+}
+
+pub async fn set_min_post_role(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(channel_id): Path<Uuid>,
+    Json(req): Json<SetMinPostRoleReq>,
+) -> Result<(), ApiError> {
+    user.require(Role::Admin)?;
+
+    let result = sqlx::query("update channels set min_post_role = $1 where id = $2")
+        .bind(req.min_post_role)
         .bind(channel_id)
         .execute(&state.db)
         .await?;

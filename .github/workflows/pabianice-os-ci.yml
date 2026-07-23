@@ -16,6 +16,24 @@ jobs:
     defaults:
       run:
         working-directory: pabianice-os/server
+    # kilka testow (routes/users.rs, routes/messages.rs) to sqlx::test - realne
+    # integracyjne testy na tymczasowej bazie, nie tylko czysta logika jak w /server
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v4
 

@@ -1,5 +1,6 @@
 mod auth;
 mod error;
+mod retention;
 mod roles;
 mod routes;
 mod state;
@@ -32,6 +33,7 @@ async fn main() -> anyhow::Result<()> {
     sqlx::migrate!("./migrations").run(&db).await?;
 
     bootstrap_admin(&db).await?;
+    retention::spawn_cleanup_task(db.clone());
 
     let state = AppState { db };
     let app = routes::router(state, &admin_panel_dir);

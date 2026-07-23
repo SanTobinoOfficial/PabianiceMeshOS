@@ -17,17 +17,20 @@ realnie skompilowane i przetestowane (`cargo test`, `cargo clippy -D warnings`):
 - **Konta i role** (`server/src/roles.rs`, `server/src/auth.rs`) - trzy poziomy
   (member/moderator/admin), hasła hashowane Argon2, sesje jako losowy bearer
   token w tabeli `sessions` (nie JWT - prościej, łatwiej unieważnić pojedynczą
-  sesję przez `delete from sessions`). Brak publicznej samorejestracji - konta
+  sesję - `POST /v1/auth/logout` faktycznie usuwa ją z bazy, nie tylko czyści
+  `localStorage` po stronie panelu). Brak publicznej samorejestracji - konta
   zakłada administrator (`POST /v1/users`), pierwsze konto powstaje automatycznie
   przy pierwszym starcie z `ADMIN_BOOTSTRAP_USERNAME`/`ADMIN_BOOTSTRAP_PASSWORD`.
 - **Kategorie i kanały** (`server/src/routes/channels.rs`) - płaska struktura,
   tworzenie/usuwanie wymaga roli admin.
-- **Wiadomości kanałowe** (`server/src/routes/messages.rs`) - każdy zalogowany
-  może pisać na każdym kanale w tym szkielecie (brak jeszcze uprawnień
-  per-kanał, patrz "Czego tu brakuje").
-- **Ustawienia serwera** (`server/src/routes/admin.rs`) - retencja wiadomości
-  (dni, 0 = bez limitu, niezależna od retencji `/server`) i przełącznik
-  federacji - **sama flaga, nie działający protokół**, patrz niżej.
+- **Wiadomości kanałowe** (`server/src/routes/messages.rs`) - pisanie wymaga
+  minimalnej roli ustawionej per-kanał (`channels.min_post_role`, domyślnie
+  member, admin może podnieść np. kanał ogłoszeń do moderator/admin przez
+  `PUT /v1/channels/:id/min-post-role`).
+- **Ustawienia serwera** (`server/src/routes/admin.rs`, `server/src/retention.rs`) -
+  retencja wiadomości (dni, 0 = bez limitu, niezależna od retencji `/server`,
+  faktycznie egzekwowana co godzinę w tle) i przełącznik federacji - **sama
+  flaga, nie działający protokół**, patrz niżej.
 - **Panel admina** (`admin-panel/`) - statyczny HTML/CSS/vanilla JS, zero
   zależności zewnętrznych, serwowany z tego samego procesu co API
   (`tower-http::ServeDir`, patrz `server/src/routes/mod.rs`) - jeden port,
@@ -93,26 +96,32 @@ pracy, celowo odłożony - fundament (konta/role/kanały) musiał powstać pierw
 ## Czego tu jeszcze brakuje
 
 - Protokołu federacji (patrz wyżej) - na razie tylko flaga w bazie.
-- Uprawnień per-kanał (kto może pisać/czytać na którym kanale) - na razie
-  każdy zalogowany może pisać wszędzie, tylko admin może tworzyć/usuwać kanały.
+- Uprawnień per-kanał na *czytanie* (na razie tylko pisanie ma próg roli -
+  `min_post_role` - każdy zalogowany widzi każdy kanał).
 - Grupowego szyfrowania E2E kanałów (patrz "różnica modelu zaufania" wyżej).
 - Realnej integracji `identity_pub` z resztą systemu (na razie tylko kolumna).
-- Automatycznego czyszczenia wg `message_retention_days` - ustawienie się
-  zapisuje, ale nic jeszcze go nie egzekwuje (brak odpowiednika
-  `server/src/retention.rs`).
 - Wsparcia Alpine Linux w `install.sh`.
-- Testów integracyjnych względem realnej bazy (na razie tylko testy
-  jednostkowe logiki ról i hashowania haseł, bez bazy).
 
 ## Endpointy (v1)
 
 | Metoda | Ścieżka | Rola |
 |---|---|---|
 | POST | `/v1/auth/login` | - |
+| POST | `/v1/auth/logout` | dowolny zalogowany (usuwa własną sesję) |
 | GET/POST | `/v1/users` | moderator (GET) / admin (POST) |
 | PUT | `/v1/users/:id/role` | admin |
 | GET/POST | `/v1/categories` | dowolny zalogowany (GET) / admin (POST) |
 | GET/POST | `/v1/channels` | dowolny zalogowany (GET) / admin (POST) |
 | DELETE | `/v1/channels/:id` | admin |
-| GET/POST | `/v1/channels/:id/messages` | dowolny zalogowany |
+| PUT | `/v1/channels/:id/min-post-role` | admin |
+| GET/POST | `/v1/channels/:id/messages` | dowolny zalogowany (GET) / próg `min_post_role` (POST) |
 | GET/PUT | `/v1/admin/settings` | moderator (GET) / admin (PUT) |
+
+## Testy
+
+`cargo test` w `pabianice-os/server` uruchamia zarówno czystą logikę (role,
+hashowanie haseł) jak i realne testy integracyjne na tymczasowej bazie
+(`#[sqlx::test]` - login/logout, tworzenie kont, wymuszanie `min_post_role`).
+Wymaga zmiennej `DATABASE_URL` wskazującej na dowolny Postgres z uprawnieniem
+tworzenia baz (sqlx sam tworzy i czyści tymczasową bazę per test) - w CI
+(`pabianice-os-ci.yml`) to kontener `postgres:16-alpine` jako `services`.

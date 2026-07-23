@@ -97,3 +97,64 @@ pub async fn set_role(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::PgPool;
+
+    fn admin_user() -> CurrentUser {
+        CurrentUser {
+            id: Uuid::new_v4(),
+            username: "admin".into(),
+            role: Role::Admin,
+            token: vec![],
+        }
+    }
+
+    fn member_user() -> CurrentUser {
+        CurrentUser {
+            id: Uuid::new_v4(),
+            username: "czlonek".into(),
+            role: Role::Member,
+            token: vec![],
+        }
+    }
+
+    fn req(username: &str) -> CreateUserReq {
+        CreateUserReq {
+            username: username.into(),
+            password: "wieczorami-po-pracy".into(),
+            role: None,
+        }
+    }
+
+    #[sqlx::test]
+    async fn non_admin_cannot_create_user(pool: PgPool) {
+        let state = AppState { db: pool };
+        let result = create_user(State(state), member_user(), Json(req("nowy"))).await;
+        assert!(matches!(result, Err(ApiError::Forbidden)));
+    }
+
+    #[sqlx::test]
+    async fn admin_can_create_user(pool: PgPool) {
+        let state = AppState { db: pool };
+        let mut r = req("nowy");
+        r.role = Some(Role::Moderator);
+        let created = create_user(State(state), admin_user(), Json(r))
+            .await
+            .unwrap();
+        assert_eq!(created.0.username, "nowy");
+        assert_eq!(created.0.role, Role::Moderator);
+    }
+
+    #[sqlx::test]
+    async fn duplicate_username_is_conflict(pool: PgPool) {
+        let state = AppState { db: pool };
+        let _first = create_user(State(state.clone()), admin_user(), Json(req("duplikat")))
+            .await
+            .unwrap();
+        let second = create_user(State(state), admin_user(), Json(req("duplikat"))).await;
+        assert!(matches!(second, Err(ApiError::Conflict)));
+    }
+}

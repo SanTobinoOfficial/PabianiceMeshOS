@@ -35,6 +35,10 @@ async function api(path, options = {}) {
 }
 
 function logout() {
+    // token lokalny czyscimy od razu (UI ma zareagowac natychmiast); usuniecie
+    // sesji po stronie serwera jest best-effort w tle, poza wspoldzielonym api()
+    // helperem - api() sam wola logout() na 401, wiec zapetlilby sie w kolko
+    const token = state.token;
     state.token = null;
     state.role = null;
     state.username = null;
@@ -43,6 +47,13 @@ function logout() {
     localStorage.removeItem("pos_username");
     document.getElementById("app-screen").hidden = true;
     document.getElementById("login-screen").hidden = false;
+
+    if (token) {
+        fetch("/v1/auth/logout", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {});
+    }
 }
 
 function roleAtLeast(min) {
