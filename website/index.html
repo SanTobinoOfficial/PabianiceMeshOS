@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pabianice Comms — prywatna sieć radiowa mesh</title>
-<meta name="description" content="Prywatna, szyfrowana end-to-end sieć komunikacji radiowej mesh (LoRa) budowana w Pabianicach. Open source, ESP32-S3 + SX1262, Signal Protocol.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='10' fill='%23ffb238'/><circle cx='50' cy='50' r='26' fill='none' stroke='%23ffb238' stroke-width='4'/><circle cx='50' cy='50' r='42' fill='none' stroke='%23ffb238' stroke-width='3' opacity='0.5'/></svg>">
+<title>Pabianice Comms - prywatna sieć radiowa mesh</title>
+<meta name="description" content="Prywatna, zdecentralizowana sieć tekstowa na fali radiowej (LoRa 868 MHz), szyfrowana end-to-end Signal Protocol. Open source, ESP32-S3 + SX1262.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='10' fill='%235645d4'/><circle cx='50' cy='50' r='26' fill='none' stroke='%235645d4' stroke-width='4'/><circle cx='50' cy='50' r='42' fill='none' stroke='%235645d4' stroke-width='3' opacity='0.5'/></svg>">
 <link rel="stylesheet" href="assets/site.css">
 <script>document.documentElement.classList.add('js')</script>
 </head>
@@ -13,151 +13,186 @@
 
 <div class="topbar">
   <div class="wrap">
-    <a class="brand" href="#top"><span class="dot"></span> Pabianice Comms</a>
+    <a class="brand" href="#top">[pabianice-comms]</a>
     <nav class="topnav">
       <a href="#jak-to-dziala">Jak to działa</a>
       <a href="#fazy">Fazy</a>
       <a href="#community">Community</a>
-      <a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS">GitHub</a>
+      <a class="btn on-dark secondary" href="https://github.com/SanTobinoOfficial/PabianiceMeshOS">GitHub</a>
     </nav>
   </div>
 </div>
 
-<header class="hero" id="top">
-  <div class="wrap hero-grid">
-    <div>
-      <div class="eyebrow">LoRa 868&nbsp;MHz · mesh · E2E encryption</div>
-      <h1>Sieć komunikacji,<br>której nie da się<br><em>wyłączyć jednym telefonem.</em></h1>
-      <p class="lede">
-        Pabianice Comms to prywatna, zdecentralizowana sieć tekstowa na fali radiowej —
-        niezależna od operatorów i internetu, szyfrowana end-to-end (Signal Protocol),
-        budowana przez ludzi samodzielnie składających własne węzły z ESP32-S3 i modułu SX1262.
-      </p>
-      <div class="cta-row">
-        <a class="btn primary" href="https://github.com/SanTobinoOfficial/PabianiceMeshOS">Zobacz kod źródłowy</a>
-        <a class="btn" href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/tree/claude/pabianice-comms-start-slq0jn/tutoriale">Zbuduj własny węzeł</a>
-      </div>
-      <div class="status-badge">
-        <span>STATUS:</span> <b>Faza 1 — Prototyp</b><span> · radio + mesh routing + E2E encryption gotowe</span>
-      </div>
-    </div>
-    <div class="mesh-scene reveal">
-      <svg viewBox="0 0 300 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <line class="mesh-link" x1="150" y1="130" x2="60" y2="60"/>
-        <line class="mesh-link" x1="150" y1="130" x2="240" y2="50"/>
-        <line class="mesh-link" x1="150" y1="130" x2="50" y2="200"/>
-        <line class="mesh-link" x1="150" y1="130" x2="230" y2="205"/>
-        <line class="mesh-link" x1="60" y1="60" x2="20" y2="130"/>
-        <line class="mesh-link" x1="240" y1="50" x2="270" y2="120"/>
-        <line class="mesh-link" x1="50" y1="200" x2="20" y2="130"/>
-        <line class="mesh-link" x1="230" y1="205" x2="270" y2="120"/>
-
-        <circle class="mesh-pulse" cx="150" cy="130" r="14"/>
-        <circle class="mesh-pulse d2" cx="150" cy="130" r="14"/>
-        <circle class="mesh-pulse d3" cx="150" cy="130" r="14"/>
-
-        <circle class="mesh-node you" cx="150" cy="130" r="9"/>
-        <circle class="mesh-node" cx="60" cy="60" r="6"/>
-        <circle class="mesh-node" cx="240" cy="50" r="6"/>
-        <circle class="mesh-node" cx="50" cy="200" r="6"/>
-        <circle class="mesh-node" cx="230" cy="205" r="6"/>
-        <circle class="mesh-node" cx="20" cy="130" r="5"/>
-        <circle class="mesh-node" cx="270" cy="120" r="5"/>
-
-        <text class="mesh-label" x="150" y="152" text-anchor="middle">TY</text>
-        <text class="mesh-label" x="60" y="46" text-anchor="middle">sąsiad</text>
-        <text class="mesh-label" x="240" y="36" text-anchor="middle">sąsiad</text>
-        <text class="mesh-label" x="20" y="150" text-anchor="middle">skok 2</text>
-        <text class="mesh-label" x="270" y="140" text-anchor="middle">skok 2</text>
-      </svg>
-    </div>
-  </div>
-</header>
-
-<section id="jak-to-dziala">
+<section class="tile dark" id="top">
   <div class="wrap">
-    <div class="section-head reveal">
-      <span class="section-num">§1</span>
-      <h2>Jak to działa</h2>
+    <span class="status-chip reveal"><b>Faza 1</b> · prototyp dla wąskiego grona</span>
+    <h1>Sieć komunikacji,<br>której nie da się<br>wyłączyć jednym telefonem.</h1>
+    <p class="lead">
+      Pabianice Comms to prywatna, zdecentralizowana sieć tekstowa na fali radiowej -
+      niezależna od operatorów i internetu, szyfrowana end-to-end (Signal Protocol),
+      budowana przez ludzi samodzielnie składających własne węzły z ESP32-S3 i modułu SX1262.
+    </p>
+    <div class="cta-row">
+      <a class="btn primary" href="https://github.com/SanTobinoOfficial/PabianiceMeshOS">Zobacz kod źródłowy</a>
+      <a class="btn on-dark secondary" href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/tree/claude/pabianice-comms-start-slq0jn/tutoriale">Zbuduj własny węzeł</a>
     </div>
-    <ol class="steps">
-      <li class="reveal"><b>Szyfrowanie u źródła.</b> Wiadomość jest szyfrowana end-to-end na Twoim urządzeniu (X3DH + Double Ratchet, ta sama rodzina protokołów co Signal), zanim w ogóle trafi do radia.</li>
-      <li class="reveal"><b>Skok po skoku.</b> Zaszyfrowany pakiet trafia do najbliższego węzła w zasięgu — niezależnie czyją jest własnością. Węzeł sprawdza swoją tabelę obecności i albo dostarcza, albo rozgłasza dalej (flooding z licznikiem TTL).</li>
-      <li class="reveal"><b>Store-and-forward.</b> Węzły po drodze cache'ują wiadomość, gdyby odbiorca pojawił się w ich zasięgu później — sieć opóźnieniotolerancyjna (DTN), nie wymaga ciągłej ścieżki nadawca→odbiorca.</li>
-      <li class="reveal"><b>Zero-trust.</b> Żaden pośredniczący węzeł, nawet opcjonalny serwer centralny, nie ma technicznej możliwości odczytania treści — widzi wyłącznie zaszyfrowany blob.</li>
-    </ol>
-  </div>
-</section>
 
-<section id="fazy">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="section-num">§2</span>
-      <h2>Fazy wdrożenia</h2>
-    </div>
-    <p class="section-sub reveal">Projekt idzie etapami — każda faza jest w pełni legalna i użyteczna sama w sobie, zanim przejdzie do kolejnej. Szczegóły prawne (UKE, RED/CE, RODO, CEIDG) w pełnym planie w repo.</p>
-    <div class="phases reveal">
-      <div class="phase active">
-        <span class="phase-tag">Faza 1</span>
-        <span class="phase-name">Prototyp dla wąskiego grona</span>
-        <span class="phase-state now">W budowie</span>
+    <div class="hero-tui reveal">
+      <div class="hero-tui-title">TEST-SIECI.LOG</div>
+      <div class="hero-tui-prompt">$ idf.py -p /dev/ttyUSB0 monitor</div>
+      <div class="hero-tui-log">
+        <div><span class="log-ts">I (330)</span> <span class="log-txt">app: wezel wystartowal, lokalne ID: a4cf12b8aabb0000</span></div>
+        <div><span class="log-ts">I (15234)</span> <span class="log-txt">app: brak sesji z peerem jeszcze, wyslano prosbe o klucze</span></div>
+        <div><span class="log-ts">I (16510)</span> <span class="log-txt">mesh: przetworzono bundle kluczy od sasiada, sesja</span> <span class="log-ok">OK</span></div>
+        <div><span class="log-ts">I (30234)</span> <span class="log-txt">app: wyslano zaszyfrowana wiadomosc testowa</span></div>
+        <div><span class="log-ts">I (30980)</span> <span class="log-txt">app: odebrano 16 B (odszyfrowane): "czesc z Pabianic"</span></div>
       </div>
-      <div class="phase">
-        <span class="phase-tag">Faza 2</span>
-        <span class="phase-name">Publikacja open source</span>
-        <span class="phase-state todo">Zaplanowane</span>
-      </div>
-      <div class="phase">
-        <span class="phase-tag">Faza 3</span>
-        <span class="phase-name">Opcjonalny tryb scentralizowany</span>
-        <span class="phase-state todo">Zaplanowane</span>
-      </div>
-      <div class="phase">
-        <span class="phase-tag">Faza 4</span>
-        <span class="phase-name">Sprzedaż certyfikowanych zestawów</span>
-        <span class="phase-state todo">Zaplanowane</span>
+      <div class="hero-tui-hint">
+        <span>[+] Signal Protocol, X3DH + Double Ratchet</span>
+        <span>[+] TTL=8, flooding + dedup + store-and-forward</span>
+        <span>[+] serwer nigdy nie widzi treści</span>
       </div>
     </div>
   </div>
 </section>
 
-<section id="community">
+<section class="tile canvas" id="jak-to-dziala">
   <div class="wrap">
-    <div class="section-head reveal">
-      <span class="section-num">§3</span>
-      <h2>Dołącz</h2>
+    <h2 class="reveal">Jak to działa</h2>
+    <ul class="list-rows reveal">
+      <li>
+        <span class="marker">[1]</span>
+        <span><b>Szyfrowanie u źródła.</b> <span class="desc">Wiadomość jest szyfrowana end-to-end na Twoim urządzeniu (X3DH + Double Ratchet, ta sama rodzina protokołów co Signal), zanim trafi do radia.</span></span>
+      </li>
+      <li>
+        <span class="marker">[2]</span>
+        <span><b>Skok po skoku.</b> <span class="desc">Zaszyfrowany pakiet trafia do najbliższego węzła w zasięgu, niezależnie czyją jest własnością. Węzeł sprawdza tabelę obecności i albo dostarcza, albo rozgłasza dalej (flooding, TTL=8).</span></span>
+      </li>
+      <li>
+        <span class="marker">[3]</span>
+        <span><b>Store-and-forward.</b> <span class="desc">Węzły po drodze cache'ują wiadomość na wypadek, gdyby odbiorca pojawił się w ich zasięgu później - sieć opóźnieniotolerancyjna (DTN).</span></span>
+      </li>
+      <li>
+        <span class="marker">[4]</span>
+        <span><b>Zero-trust.</b> <span class="desc">Żaden pośredniczący węzeł, nawet opcjonalny serwer centralny, nie ma technicznej możliwości odczytania treści - widzi wyłącznie zaszyfrowany blob.</span></span>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="tile dark" id="fazy">
+  <div class="wrap">
+    <h2 class="reveal">Fazy wdrożenia</h2>
+    <p class="lead reveal">Projekt idzie etapami - każda faza ma być w pełni legalna sama w sobie, zanim przejdzie do kolejnej. Pełna analiza prawna (UKE, RED/CE, RODO, CEIDG) w planie technicznym w repo.</p>
+    <ul class="phase-rows reveal">
+      <li class="done">
+        <span class="box">[x]</span>
+        <span class="name">Faza 1 - prototyp</span>
+        <span class="tag">w budowie</span>
+        <span class="note">radio, mesh routing i E2E encryption gotowe</span>
+      </li>
+      <li>
+        <span class="box">[&nbsp;]</span>
+        <span class="name">Faza 2 - open source</span>
+        <span class="note">kod i dokumentacja publiczne od pierwszego commita</span>
+      </li>
+      <li>
+        <span class="box">[&nbsp;]</span>
+        <span class="name">Faza 3 - tryb scentralizowany</span>
+        <span class="note">store-and-forward + katalog kluczy, zgodność RODO</span>
+      </li>
+      <li>
+        <span class="box">[&nbsp;]</span>
+        <span class="name">Faza 4 - sprzedaż zestawów</span>
+        <span class="note">dopiero po pełnej certyfikacji CE/RED</span>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section class="tile parchment" id="liczby">
+  <div class="wrap">
+    <h2 class="reveal">Skala, do jakiej projektujemy</h2>
+    <p class="lead reveal">Szacunki z kalkulacji pokrycia w pełnym planie technicznym - nie twarde limity, ale rząd wielkości, pod który dobrane są parametry mesh.</p>
+    <div class="stats reveal">
+      <div>
+        <div class="stat-num">~300</div>
+        <div class="stat-label">węzłów w sieci miejskiej</div>
+      </div>
+      <div>
+        <div class="stat-num">~32 km²</div>
+        <div class="stat-label">obszar miasta (Pabianice)</div>
+      </div>
+      <div>
+        <div class="stat-num">90 dni</div>
+        <div class="stat-label">domyślna retencja na serwerze (opt-in)</div>
+      </div>
     </div>
-    <p class="section-sub reveal">To projekt hobbystyczny, budowany w otwartości. Kod, dokumentacja i dyskusja są publiczne od pierwszego commita.</p>
-    <div class="cards reveal">
-      <div class="card">
-        <h3>Kod źródłowy</h3>
-        <p>Firmware (ESP-IDF/C), routing mesh, warstwa krypto, dokumentacja protokołu.</p>
+  </div>
+</section>
+
+<section class="tile canvas" id="community">
+  <div class="wrap">
+    <h2 class="reveal">Dołącz</h2>
+    <p class="lead reveal">To projekt hobbystyczny, budowany w otwartości. Kod, dokumentacja i dyskusja są publiczne od pierwszego commita.</p>
+    <ul class="link-rows reveal">
+      <li>
+        <div class="title">Kod źródłowy</div>
+        <div class="desc">Firmware (ESP-IDF/C), routing mesh, warstwa krypto (libsignal-protocol-c), serwer store-and-forward (Rust/Axum/Postgres).</div>
         <a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS">Repozytorium →</a>
-      </div>
-      <div class="card">
-        <h3>Forum społeczności</h3>
-        <p>Pytania, pomysły, pokaż swój zbudowany węzeł, wyniki testów zasięgu w Twojej okolicy.</p>
+      </li>
+      <li>
+        <div class="title">Forum społeczności</div>
+        <div class="desc">Pytania, pomysły, pokaż zbudowany węzeł, wyniki testów zasięgu w Twojej okolicy.</div>
         <a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/discussions">GitHub Discussions →</a>
-      </div>
-      <div class="card">
-        <h3>Zbuduj węzeł</h3>
-        <p>BOM, okablowanie, montaż i pierwsze uruchomienie krok po kroku.</p>
+      </li>
+      <li>
+        <div class="title">Zbuduj własny węzeł</div>
+        <div class="desc">Montaż i okablowanie, budowanie firmware, pierwszy test sieci - krok po kroku.</div>
         <a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/tree/claude/pabianice-comms-start-slq0jn/tutoriale">Tutoriale →</a>
-      </div>
-    </div>
+      </li>
+    </ul>
   </div>
 </section>
 
-<section class="legal">
+<section class="tile dark">
   <div class="wrap reveal">
-    <p><strong>Zastrzeżenie.</strong> Ten projekt ma charakter planistyczny, edukacyjny i hobbystyczny. Nie stanowi porady prawnej. Jeśli budujesz własne urządzenie radiowe — sprawdź lokalne limity mocy nadawania (ERP) i duty cycle dla pasma ISM w swoim kraju. To Twoja odpowiedzialność. Przed jakimkolwiek publicznym udostępnianiem sprzętu, sprzedażą lub przetwarzaniem danych osób trzecich skonsultuj się z prawnikiem specjalizującym się w prawie telekomunikacyjnym i RODO.</p>
+    <p class="legal-text">Zastrzeżenie: ten projekt ma charakter planistyczny, edukacyjny i hobbystyczny, nie stanowi porady prawnej. Jeśli budujesz własne urządzenie radiowe - sprawdź lokalne limity mocy nadawania (ERP) i duty cycle dla pasma ISM w swoim kraju, to Twoja odpowiedzialność. Przed publicznym udostępnianiem sprzętu, sprzedażą lub przetwarzaniem danych osób trzecich skonsultuj się z prawnikiem specjalizującym się w prawie telekomunikacyjnym i RODO.</p>
   </div>
 </section>
 
 <footer class="site-footer">
-  <div class="wrap" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; width:100%;">
-    <span>Pabianice Comms — projekt open source</span>
-    <span><a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/blob/claude/pabianice-comms-start-slq0jn/docs/legal/polityka-prywatnosci.md">Polityka prywatności</a> · <a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/blob/claude/pabianice-comms-start-slq0jn/docs/legal/regulamin.md">Regulamin</a></span>
+  <div class="wrap">
+    <div class="footer-cols">
+      <div class="footer-col">
+        <h3>Projekt</h3>
+        <ul>
+          <li><a href="#jak-to-dziala">Jak to działa</a></li>
+          <li><a href="#fazy">Fazy wdrożenia</a></li>
+          <li><a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/blob/claude/pabianice-comms-start-slq0jn/README.md">README</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3>Dokumentacja</h3>
+        <ul>
+          <li><a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/tree/claude/pabianice-comms-start-slq0jn/firmware">Firmware</a></li>
+          <li><a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/tree/claude/pabianice-comms-start-slq0jn/server">Serwer</a></li>
+          <li><a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/tree/claude/pabianice-comms-start-slq0jn/tutoriale">Tutoriale</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3>Prawne</h3>
+        <ul>
+          <li><a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/blob/claude/pabianice-comms-start-slq0jn/docs/legal/regulamin.md">Regulamin (projekt, Faza 3)</a></li>
+          <li><a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/blob/claude/pabianice-comms-start-slq0jn/docs/legal/polityka-prywatnosci.md">Polityka prywatności (projekt)</a></li>
+          <li><a href="https://github.com/SanTobinoOfficial/PabianiceMeshOS/blob/claude/pabianice-comms-start-slq0jn/LICENSE">Licencja GPLv3</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>Pabianice Comms - projekt open source, GPLv3</span>
+      <span>Status: Faza 1, prototyp</span>
+    </div>
   </div>
 </footer>
 
