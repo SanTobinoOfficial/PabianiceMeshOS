@@ -191,3 +191,50 @@ fn decode_bundle(data: &[u8]) -> Result<BundleFields> {
         identity_pub,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn sample_fields() -> BundleFields {
+        BundleFields {
+            registration_id: 13322,
+            pre_key_id: 7,
+            pre_key_pub: vec![0xaa; 33],
+            signed_pre_key_id: 1,
+            signed_pre_key_pub: vec![0xbb; 33],
+            signed_pre_key_sig: vec![0xcc; 64],
+            identity_pub: vec![0xdd; 33],
+        }
+    }
+
+    #[test]
+    fn encode_then_decode_roundtrips() {
+        let original = sample_fields();
+        let encoded = encode_bundle(&original).unwrap();
+        assert!(encoded.len() <= ffi::PCRYPTO_BUNDLE_MAX_LEN);
+
+        let decoded = decode_bundle(&encoded).unwrap();
+        assert_eq!(decoded.registration_id, original.registration_id);
+        assert_eq!(decoded.pre_key_id, original.pre_key_id);
+        assert_eq!(decoded.pre_key_pub, original.pre_key_pub);
+        assert_eq!(decoded.signed_pre_key_id, original.signed_pre_key_id);
+        assert_eq!(decoded.signed_pre_key_pub, original.signed_pre_key_pub);
+        assert_eq!(decoded.signed_pre_key_sig, original.signed_pre_key_sig);
+        assert_eq!(decoded.identity_pub, original.identity_pub);
+    }
+
+    #[test]
+    fn decode_rejects_truncated_bundle() {
+        let encoded = encode_bundle(&sample_fields()).unwrap();
+        let truncated = &encoded[..encoded.len() - 5];
+        assert!(decode_bundle(truncated).is_err());
+    }
+
+    #[test]
+    fn encode_rejects_oversized_field() {
+        let mut fields = sample_fields();
+        fields.identity_pub = vec![0u8; 256];
+        assert!(encode_bundle(&fields).is_err());
+    }
+}

@@ -1,0 +1,43 @@
+name: Client Desktop CI
+
+on:
+  push:
+    branches: [claude/pabianice-comms-start-slq0jn]
+    paths:
+      - "client/desktop/**"
+      - "firmware/components/crypto/**"
+      - "firmware/third_party/libsignal-protocol-c"
+      - ".github/workflows/client-desktop-ci.yml"
+  pull_request:
+    paths:
+      - "client/desktop/**"
+      - "firmware/components/crypto/**"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client/desktop
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # build.rs kompiluje provider.c przez system mbedtls (to samo co ESP-IDF
+      # dostarcza za darmo, na hoscie trzeba doinstalowac) - patrz README.md
+      - name: libmbedtls-dev
+        run: sudo apt-get update && sudo apt-get install -y libmbedtls-dev
+
+      - name: Rust stable + rustfmt + clippy
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: client/desktop
+
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
