@@ -67,8 +67,18 @@ zestaw naraz, nadpisywanie jest bezpieczne.
 ./target/release/pabianice --data-dir ./moje-dane --server http://adres:8080 poll --ack
 ```
 
-`poll` to jednorazowe sprawdzenie, nie proces działający w tle - jeśli chcesz na
-bieżąco, uruchamiaj go cyklicznie (np. `watch -n 30 ...`) albo napisz sobie pętlę.
+`poll` to jednorazowe sprawdzenie. Żeby zostawić to działające w tle i dostawać
+wiadomości na bieżąco, użyj `listen` zamiast pętli `watch`:
+
+```bash
+./target/release/pabianice --data-dir ./moje-dane --server http://adres:8080 \
+    listen --interval 5 --ack
+```
+
+Sprawdza serwer co 5 sekund (`--interval`), wypisuje i (z `--ack`) potwierdza każdą
+nową wiadomość, działa aż do Ctrl-C. To wciąż zwykłe odpytywanie HTTP w pętli, nie
+prawdziwy push - serwer nie wystawia na zewnątrz swojego wewnętrznego kanału
+powiadomień.
 
 ## Telefon bez internetu - most BLE
 

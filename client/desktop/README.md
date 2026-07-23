@@ -63,6 +63,12 @@ cargo build --release
 
 # odbiera i odszyfrowuje czekajace wiadomosci, --ack usuwa je z serwera po odebraniu
 ./target/release/pabianice --data-dir ./moje-dane --server http://twoj-serwer:8080 poll --ack
+
+# jak wyzej, ale w petli co --interval sekund az do Ctrl-C - zwykle powtarzane
+# odpytywanie HTTP, nie push (serwer nie wystawia na zewnatrz swojego wewnetrznego
+# kanalu powiadomien Redis) - wygodne do zostawienia w tle w terminalu
+./target/release/pabianice --data-dir ./moje-dane --server http://twoj-serwer:8080 \
+    listen --interval 5 --ack
 ```
 
 `--data-dir` to cała tożsamość (klucz prywatny, sesje) - nie kopiuj go między maszynami
@@ -74,12 +80,15 @@ ani nigdzie publicznie.
 Działa naprawdę - przetestowane end-to-end na dwóch osobnych tożsamościach względem
 realnie odpalonego `/server` (Postgres + Redis): publikacja bundli, X3DH, wymiana
 wiadomości w obie strony, kilka wiadomości w tej samej sesji (Double Ratchet idzie do
-przodu, nie tylko pierwsza PreKeySignalMessage), potwierdzanie odbioru (`--ack`).
+przodu, nie tylko pierwsza PreKeySignalMessage), potwierdzanie odbioru (`--ack`),
+`listen` odbierający wiadomości wysłane już po jego starcie (przetestowane w tle
+z realnym opóźnieniem między wysyłką a odbiorem).
 
 Czego tu jeszcze brakuje:
 - Brak automatycznego dogenerowywania nowych one-time prekeys po wyczerpaniu puli 20 -
   to ten sam TODO co w firmware (`pcrypto.c`), nie coś nowego wprowadzonego tutaj.
-- `poll` to jednorazowe odpytanie, nie długo działający proces z live-nasłuchem
-  (serwer ma do tego `PUBLISH`/Redis pub-sub pod `notify:<node_id>`, ale klient go
-  jeszcze nie subskrybuje - trzeba by trzymać długo żyjące połączenie/pętlę).
+- `listen` to zwykłe odpytywanie HTTP w pętli (patrz `--interval`), nie push - serwer
+  ma wewnętrzny kanał powiadomień (`PUBLISH`/Redis pub-sub pod `notify:<node_id>`),
+  ale to infrastruktura pomocnicza dla ewentualnej bramki, nie publiczne API, więc
+  klient zewnętrzny i tak musi odpytywać.
 - Zero UI - to CLI. Ktoś kto chce okienka, musi je dopisać nad `src/pcrypto.rs`/`src/api.rs`.

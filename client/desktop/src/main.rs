@@ -48,6 +48,16 @@ enum Command {
         #[arg(long)]
         ack: bool,
     },
+    /// Jak `poll`, ale w petli co --interval sekund, az do Ctrl-C - zamiast recznie
+    /// odpalac `poll` w kolko. To zwykle odpytywanie HTTP, nie push - serwer nie
+    /// wystawia zadnego kanalu powiadomien na zewnatrz (Redis pub/sub uzywany
+    /// wewnetrznie przez /server nie jest publicznym API)
+    Listen {
+        #[arg(long, default_value_t = 5)]
+        interval: u64,
+        #[arg(long)]
+        ack: bool,
+    },
 }
 
 fn own_node_id(data_dir: &std::path::Path) -> Result<[u8; 8]> {
@@ -114,31 +124,51 @@ fn main() -> Result<()> {
 
         Command::Poll { ack } => {
             let api = Api::new(cli.server.clone());
-            let pending = api.poll_messages(&own_id_hex)?;
-            if pending.is_empty() {
+            let found = poll_once(&api, &identity, &own_id_hex, ack)?;
+            if !found {
                 println!("brak nowych wiadomosci");
             }
-            for msg in pending {
-                let src_id = parse_peer_id(&msg.src_id)?;
-                let ciphertext = hex::decode(&msg.ciphertext)?;
-                match identity.decrypt(&src_id, &ciphertext) {
-                    Ok(plaintext) => {
-                        let text = String::from_utf8_lossy(&plaintext);
-                        println!("[{}] od {}: {}", msg.created_at, msg.src_id, text);
-                        if ack {
-                            api.ack_message(&own_id_hex, &msg.id)?;
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!(
-                            "nie udalo sie odszyfrowac wiadomosci {} od {}: {e}",
-                            msg.id, msg.src_id
-                        );
-                    }
+        }
+
+        Command::Listen { interval, ack } => {
+            let api = Api::new(cli.server.clone());
+            println!("nasluchuje jako {own_id_hex} (co {interval}s, Ctrl-C zeby przerwac)...");
+            loop {
+                if let Err(e) = poll_once(&api, &identity, &own_id_hex, ack) {
+                    eprintln!("blad przy odpytywaniu serwera, probuje dalej: {e}");
                 }
+                std::thread::sleep(std::time::Duration::from_secs(interval));
             }
         }
     }
 
     Ok(())
+}
+
+// Wspolna sciezka dla `poll` i `listen`. Zwraca true jesli byla przynajmniej jedna
+// wiadomosc (do decydowania czy `poll` ma wypisac "brak nowych wiadomosci" - `listen`
+// samo w sobie tego nie potrzebuje, milczy w cichych cyklach zeby nie zasmiecac terminala)
+fn poll_once(api: &Api, identity: &LocalIdentity, own_id_hex: &str, ack: bool) -> Result<bool> {
+    let pending = api.poll_messages(own_id_hex)?;
+    let found = !pending.is_empty();
+    for msg in pending {
+        let src_id = parse_peer_id(&msg.src_id)?;
+        let ciphertext = hex::decode(&msg.ciphertext)?;
+        match identity.decrypt(&src_id, &ciphertext) {
+            Ok(plaintext) => {
+                let text = String::from_utf8_lossy(&plaintext);
+                println!("[{}] od {}: {}", msg.created_at, msg.src_id, text);
+                if ack {
+                    api.ack_message(own_id_hex, &msg.id)?;
+                }
+            }
+            Err(e) => {
+                eprintln!(
+                    "nie udalo sie odszyfrowac wiadomosci {} od {}: {e}",
+                    msg.id, msg.src_id
+                );
+            }
+        }
+    }
+    Ok(found)
 }
