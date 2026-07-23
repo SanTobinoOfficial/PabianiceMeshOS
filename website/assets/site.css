@@ -1,0 +1,376 @@
+/* Pabianice Comms - strona projektu.
+   Estetyka: nocny dziennik radiooperatora / stary odbiornik z podświetlaną skalą.
+   Świadomie bez fontów z Google Fonts itp. - projekt o łączności bez zależności
+   od cudzej infrastruktury, strona niech to trochę odzwierciedla. */
+
+:root {
+    --bg: #0a0d0b;
+    --bg-raised: #121712;
+    --bg-raised-2: #171d17;
+    --line: rgba(255, 178, 56, 0.16);
+    --line-strong: rgba(255, 178, 56, 0.34);
+    --paper: #e9e4d4;
+    --paper-dim: #a8a291;
+    --amber: #ffb238;
+    --amber-dim: #8a6423;
+    --signal: #6ee7a0;
+    --signal-dim: #2f5c45;
+    --danger: #ff7a68;
+    --mono: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --serif: Georgia, "Iowan Old Style", "Palatino Linotype", ui-serif, serif;
+    --max-w: 880px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--paper);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.65;
+    background-image:
+        radial-gradient(ellipse at 20% -10%, rgba(255, 178, 56, 0.08), transparent 45%),
+        repeating-linear-gradient(
+            transparent, transparent 27px, var(--line) 28px
+        );
+    background-attachment: fixed;
+}
+
+/* subtelna warstwa "szumu" / ziarna, żeby ciemne tło nie wyglądało płasko-cyfrowo */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+a { color: var(--amber); }
+a:hover { color: var(--signal); }
+
+.wrap {
+    position: relative;
+    z-index: 1;
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* --- topbar --- */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(6px);
+    background: rgba(10, 13, 11, 0.82);
+    border-bottom: 1px solid var(--line);
+}
+.topbar .wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    padding-bottom: 14px;
+}
+.brand {
+    font-family: var(--mono);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    color: var(--paper);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.brand .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--signal);
+    box-shadow: 0 0 8px 1px var(--signal);
+    animation: pulse-dot 2.4s ease-in-out infinite;
+}
+.topnav { display: flex; gap: 22px; font-family: var(--mono); font-size: 0.82rem; letter-spacing: 0.03em; }
+.topnav a { text-decoration: none; color: var(--paper-dim); }
+.topnav a:hover { color: var(--amber); }
+@media (max-width: 560px) {
+    .topnav { gap: 12px; font-size: 0.7rem; }
+    .brand { font-size: 0.8rem; }
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 0.55; transform: scale(0.85); }
+    50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* --- hero --- */
+.hero {
+    position: relative;
+    padding: 86px 0 64px;
+    overflow: hidden;
+}
+.hero-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 40px;
+    align-items: center;
+}
+@media (max-width: 760px) {
+    .hero-grid { grid-template-columns: 1fr; }
+}
+
+.eyebrow {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--signal);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+.eyebrow::before {
+    content: "";
+    width: 26px; height: 1px;
+    background: var(--signal);
+}
+
+h1 {
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    font-size: clamp(2.1rem, 5vw, 3.4rem);
+    line-height: 1.05;
+    margin: 0 0 20px;
+    color: var(--paper);
+}
+h1 em {
+    font-style: normal;
+    color: var(--amber);
+    text-shadow: 0 0 22px rgba(255, 178, 56, 0.35);
+}
+
+.lede {
+    font-size: 1.14rem;
+    color: var(--paper-dim);
+    max-width: 54ch;
+    margin: 0 0 30px;
+}
+
+.cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
+
+.btn {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 13px 20px;
+    border: 1px solid var(--line-strong);
+    color: var(--paper);
+    display: inline-block;
+    position: relative;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+.btn:hover { border-color: var(--amber); color: var(--bg); background: var(--amber); }
+.btn.primary { border-color: var(--amber); color: var(--bg); background: var(--amber); }
+.btn.primary:hover { background: var(--signal); border-color: var(--signal); }
+
+/* status badge */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 30px;
+    padding: 10px 14px;
+    border: 1px dashed var(--line-strong);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--paper-dim);
+}
+.status-badge b { color: var(--amber); }
+
+/* --- mesh diagram (svg) --- */
+.mesh-scene { position: relative; }
+.mesh-scene svg { width: 100%; height: auto; overflow: visible; }
+.mesh-node {
+    fill: var(--bg-raised);
+    stroke: var(--amber);
+    stroke-width: 1.4;
+}
+.mesh-node.you { stroke: var(--signal); }
+.mesh-link {
+    stroke: var(--line-strong);
+    stroke-width: 1;
+    stroke-dasharray: 3 4;
+}
+.mesh-pulse {
+    fill: none;
+    stroke: var(--signal);
+    stroke-width: 1.5;
+    opacity: 0;
+    transform-origin: center;
+    animation: pulse-ring 3.6s ease-out infinite;
+}
+.mesh-pulse.d2 { animation-delay: 1.2s; }
+.mesh-pulse.d3 { animation-delay: 2.4s; }
+@keyframes pulse-ring {
+    0% { opacity: 0.9; transform: scale(0.3); }
+    70% { opacity: 0; }
+    100% { opacity: 0; transform: scale(1.7); }
+}
+.mesh-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    fill: var(--paper-dim);
+    letter-spacing: 0.04em;
+}
+
+/* --- section chrome --- */
+section { padding: 58px 0; border-top: 1px solid var(--line); }
+section.no-border { border-top: none; }
+
+.section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 34px;
+}
+.section-num {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--amber-dim);
+}
+h2 {
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 1.5rem;
+    margin: 0;
+    color: var(--paper);
+}
+.section-sub { color: var(--paper-dim); max-width: 62ch; margin: -18px 0 32px; }
+
+/* reveal on scroll */
+/* Domyślnie treść jest widoczna - bez JS albo gdy IntersectionObserver z jakiegoś
+   powodu nie odpali, nic się nie chowa na stałe. Dopiero klasa "js" na <html>
+   (dodawana synchronicznie w <head>, patrz index.html) włącza animację wjazdu. */
+.reveal { transition: opacity 0.7s ease, transform 0.7s ease; }
+html.js .reveal { opacity: 0; transform: translateY(16px); }
+html.js .reveal.in { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+    html.js .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* --- steps list (jak to dziala) --- */
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+.steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 0 0 26px 52px;
+    border-left: 1px solid var(--line);
+    margin-left: 15px;
+}
+.steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+.steps li::before {
+    content: counter(step);
+    font-family: var(--mono);
+    position: absolute;
+    left: -15px;
+    top: -2px;
+    width: 30px; height: 30px;
+    border: 1px solid var(--amber-dim);
+    background: var(--bg-raised);
+    color: var(--amber);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+}
+.steps b { color: var(--paper); }
+
+/* --- phases timeline --- */
+.phases { display: grid; gap: 14px; }
+.phase {
+    display: grid;
+    grid-template-columns: 120px 1fr auto;
+    gap: 18px;
+    align-items: center;
+    padding: 16px 18px;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+}
+.phase.active { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber) inset; }
+@media (max-width: 620px) {
+    .phase { grid-template-columns: 1fr; }
+}
+.phase-tag {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--paper-dim);
+}
+.phase.active .phase-tag { color: var(--amber); }
+.phase-name { color: var(--paper); font-weight: bold; }
+.phase-state {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4px 9px;
+    border: 1px solid var(--signal-dim);
+    color: var(--signal);
+    white-space: nowrap;
+    justify-self: start;
+}
+.phase-state.todo { color: var(--paper-dim); border-color: var(--line); }
+.phase-state.now { color: var(--amber); border-color: var(--amber-dim); }
+
+/* --- cards grid (repo/community) --- */
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 760px) { .cards { grid-template-columns: 1fr; } }
+.card {
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    padding: 22px;
+    transition: border-color 0.2s, transform 0.2s;
+}
+.card:hover { border-color: var(--amber-dim); transform: translateY(-3px); }
+.card h3 {
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    color: var(--paper);
+    margin: 0 0 10px;
+}
+.card p { color: var(--paper-dim); font-size: 0.95rem; margin: 0 0 14px; }
+.card a { font-family: var(--mono); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+
+/* --- legal footer --- */
+.legal {
+    font-size: 0.86rem;
+    color: var(--paper-dim);
+    border-top: 1px solid var(--line);
+    padding: 34px 0;
+}
+.legal strong { color: var(--danger); }
+
+footer.site-footer {
+    padding: 30px 0 60px;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--paper-dim);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+footer.site-footer a { color: var(--paper-dim); }
+footer.site-footer a:hover { color: var(--amber); }
