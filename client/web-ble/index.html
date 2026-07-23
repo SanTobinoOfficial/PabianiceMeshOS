@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pabianice Comms - BLE</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Pabianice Comms <span class="tag">BLE</span></h1>
+    <p class="subtitle">Łączy telefon (bez internetu) z najbliższym węzłem mesh po Bluetooth Low Energy.</p>
+  </header>
+
+  <main>
+    <section id="connect-panel">
+      <button id="connect-btn">Połącz z węzłem</button>
+      <span id="status" class="status status-disconnected">rozłączony</span>
+    </section>
+
+    <section id="app-panel" hidden>
+      <div class="card">
+        <h2>Wyślij</h2>
+        <label for="dst-id">ID odbiorcy (16 znaków hex)</label>
+        <input id="dst-id" placeholder="np. 3eb8758404f1c537" maxlength="16" spellcheck="false">
+        <label for="msg">Wiadomość</label>
+        <textarea id="msg" rows="2" placeholder="Treść..."></textarea>
+        <button id="send-btn">Wyślij przez węzeł</button>
+      </div>
+
+      <div class="card">
+        <h2>Odebrane</h2>
+        <ul id="log"></ul>
+      </div>
+    </section>
+
+    <p class="note" id="unsupported" hidden>
+      Ta przeglądarka nie wspiera Web Bluetooth (np. Safari na iOS nigdy go nie wspierało -
+      to ograniczenie WebKita, nie tej strony). Użyj Chrome/Edge/Opery na Androidzie albo
+      komputerze.
+    </p>
+  </main>
+
+  <footer>
+    <p>Zero konta, zero serwera, zero internetu w tej ścieżce - działa tylko w zasięgu BLE
+      (kilka-kilkanaście metrów) od jednego, konkretnego węzła. Ten węzeł robi za Ciebie
+      całą kryptografię (Signal Protocol) i routing przez sieć LoRa. Szczegóły protokołu
+      BLE: <code>firmware/components/ble/README.md</code>.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
