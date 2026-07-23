@@ -11,8 +11,9 @@
 | Przewody | goldpiny żeńsko-żeńskie, kilka sztuk | grosze |
 
 Moduł bezpieczny (ATECC608A) i czujnik sabotażu z pełnego BOM-u (rozdz. 8.1 planu)
-na tym etapie pomijamy - nie ma jeszcze warstwy kryptograficznej, więc nie ma czym
-się nimi zajmować. Dojdą w kroku 2.
+na tym etapie pomijamy - klucze na razie żyją w NVS (flash), nie w module bezpiecznym,
+patrz `firmware/README.md`. Sam moduł bezpieczny to osobny temat sprzętowy na później,
+niezależny od tego czy warstwa kryptograficzna w firmware już działa czy nie.
 
 Do samego lutowania wystarczy podstawowa lutownica, jeśli Twój moduł SX1262 ma
 goldpiny już wlutowane fabrycznie (większość tanich modułów z Aliexpress ma) -

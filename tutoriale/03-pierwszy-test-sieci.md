@@ -1,55 +1,76 @@
 # 3. Pierwszy test sieci
 
-Na tym etapie (bez szyfrowania, sam routing) chodzi o sprawdzenie dwóch rzeczy:
-że węzły w ogóle się widzą po radiu (beacon obecności) oraz że wiadomość faktycznie
-wędruje przez sieć, a nie tylko leci do najbliższego sąsiada.
+Odkąd doszło szyfrowanie end-to-end (Signal Protocol), test wygląda nieco inaczej niż
+na samym routingu: wiadomości nie da się już wysłać "w eter" do wszystkich - Double
+Ratchet działa parami, więc każdy węzeł musi najpierw wymienić się kluczami z konkretnym
+adresatem. Poniżej pełny przepływ: beacon obecności, wymiana kluczy, zaszyfrowana
+wiadomość.
 
-## Test 1: dwa węzły w tym samym pokoju
+## Krok 0: poznaj ID obu węzłów
 
-Wgraj identyczne firmware na dwie płytki i podłącz obie do komputera (albo do dwóch
-oddzielnych terminali, jeśli masz dwa porty USB).
+Wgraj identyczne firmware na dwie płytki, podłącz obie i odczytaj ich lokalne ID z logu:
 
 ```bash
 idf.py -p /dev/ttyUSB0 monitor   # węzeł A
 idf.py -p /dev/ttyUSB1 monitor   # węzeł B
 ```
 
-Każdy węzeł wysyła testową wiadomość broadcastową co 30 sekund (`main.c`, na razie
-zaszyte na sztywno - to testowy kod, nie docelowa aplikacja). Po chwili w logu węzła A
-powinieneś zobaczyć wiadomość od B i na odwrót:
+Zobaczysz coś w stylu:
 
 ```
-I (30412) app: odebrano 24 B od ffffffff...: "test zasiegu z Pabianic"
+I (330) app: wezel wystartowal, lokalne ID: a4cf12b8aabb0000
 ```
 
-Jeśli nic nie przychodzi - najpierw sprawdź, czy oba węzły w ogóle się beaconują
-(`presence_touch` loguje się tylko na poziomie debug, więc jeśli chcesz to zobaczyć
-wprost, chwilowo podnieś poziom logowania w `sdkconfig` albo dodaj `ESP_LOGI` w
-`on_radio_rx` w `mesh.c`). Druga rzecz do sprawdzenia - czy oba moduły są ustawione
-na tę samą częstotliwość/SF/BW (domyślnie tak, jeśli nie zmieniałeś `mesh_init()`).
+Skopiuj ID węzła B, wklej do `main.c` węzła A jako `PEER_UNDER_TEST` (i odwrotnie),
+przebuduj i wgraj ponownie na obie płytki. Domyślnie `PEER_UNDER_TEST` to same zera -
+dopóki go nie ustawisz, firmware nic nie wyśle (dostaniesz ostrzeżenie w logu przy
+starcie).
 
-## Test 2: routing przez pośredni węzeł (trzy płytki)
+## Krok 1: wymiana kluczy
 
-To jest właściwy test mesh, nie tylko radia. Potrzebujesz trzeciej płytki.
+Po starcie każdy węzeł, dla którego `PEER_UNDER_TEST` jest ustawiony, spróbuje co 15s
+wysłać testową wiadomość - a skoro sesji jeszcze nie ma, zamiast tego poleci prośba
+o komplet kluczy (`PKT_TYPE_KEY_BUNDLE`). W logu zobaczysz:
 
-1. Ustaw węzeł A i węzeł C w takiej odległości (albo w takich pomieszczeniach), żeby
-   się **nie słyszały bezpośrednio** - np. dwa piętra budynku albo dwa końce mieszkania
-   z betonową ścianą pomiędzy.
-2. Węzeł B (pośredni) postaw tak, żeby słyszał oba.
-3. Poobserwuj logi - wiadomości broadcastowe od A powinny docierać do C wyłącznie
-   za pośrednictwem B (TTL w nagłówku spada o 1 przy każdym przeskoku, domyślnie
-   startuje z wartością 8, więc dwa skoki to i tak margines).
+```
+I (15234) app: brak sesji z peerem jeszcze, wyslano prosbe o klucze
+I (15890) mesh: prosba o bundle kluczy, odsylam
+I (16510) mesh: przetworzono bundle kluczy od sasiada, sesja OK
+```
 
-Jeśli węzeł C w ogóle nie widzi ruchu od A - to nie musi być bug w routingu, może
-po prostu żaden z węzłów faktycznie nie jest w zasięgu drugiego (przy SF7/BW125
-w budynku to realistycznie kilkadziesiąt-kilkaset metrów, patrz rozdz. 12.3 planu
-dla realistycznych szacunków zasięgu). Test zasięgu w terenie to osobny temat -
-patrz rozdz. 12.4 planu, warto to zrobić zanim zaczniesz planować rozstawienie
-większej liczby węzłów po mieście.
+Ta wymiana idzie tylko jednym skokiem (bez floodingu) - węzły musza się słyszeć
+bezpośrednio. To ograniczenie zniknie dopiero z katalogiem kluczy na serwerze (krok 3
+planu), na razie to świadomy skrót.
+
+## Krok 2: zaszyfrowana wiadomość
+
+Po udanej wymianie kolejne próby wysyłki powinny przechodzić:
+
+```
+I (30234) app: wyslano zaszyfrowana wiadomosc testowa
+I (30980) app: odebrano 16 B (odszyfrowane) od a4cf12b8...: "czesc z Pabianic"
+```
+
+To co leci przez radio w tym momencie to ciphertext Double Ratchet - jeśli podsłuchasz
+transmisję (np. tanim SDR-em), zobaczysz nieczytelne bajty, nie tekst wiadomości.
+
+## Test routingu przez pośredni węzeł (trzy płytki)
+
+Wymiana kluczy działa tylko na jeden skok, ale **wiadomości DATA po ustanowieniu sesji
+już floodują normalnie** (TTL=8 domyślnie) - więc jeśli A i B ustanowiły sesję będąc
+blisko siebie, a potem B oddali się poza bezpośredni zasięg A, wiadomości powinny wciąż
+docierać przez pośredni węzeł C, o ile C je przekazuje dalej (patrz TTL w logu).
+
+1. Ustanów sesję A↔B w tym samym pomieszczeniu (krok 1-2 wyżej).
+2. Rozstaw A i B tak, żeby przestały się słyszeć bezpośrednio, z węzłem C pomiędzy.
+3. Wiadomości od A powinny nadal docierać do B, tym razem przekazywane przez C.
+
+Jeśli nic nie dochodzi - sprawdź czy to nie kwestia zasięgu (rozdz. 12.3 planu) zanim
+zaczniesz podejrzewać routing.
 
 ## Czego na tym etapie NIE testujemy
 
-Poufności treści - jej jeszcze nie ma, payload leci jawnym tekstem. To normalne na
-tym etapie prac i nie jest błędem w kodzie, tylko świadomą kolejnością (najpierw
-transport i routing, szyfrowanie w kroku 2). Nie testuj tego firmware w sieci, gdzie
-komuś obcemu mogłoby zależeć na podsłuchaniu treści.
+Warstwy transportowej AES na poziomie radiowym (rozdz. 6.3 planu) - jeszcze jej nie ma,
+tylko E2E encryption treści. Metadane routingu (kto z kim, kiedy, ile) są nadal jawne
+dla każdego kto podsłuchuje transmisję - to znane i udokumentowane ograniczenie
+(rozdz. 6.5 planu), nie błąd tego etapu prac.
