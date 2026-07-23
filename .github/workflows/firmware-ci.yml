@@ -1,0 +1,26 @@
+name: Firmware CI
+
+on:
+  push:
+    branches: [claude/pabianice-comms-start-slq0jn]
+    paths:
+      - "firmware/**"
+      - ".github/workflows/firmware-ci.yml"
+  pull_request:
+    paths:
+      - "firmware/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: idf.py build (esp32s3)
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.2
+          target: esp32s3
+          path: "firmware"
