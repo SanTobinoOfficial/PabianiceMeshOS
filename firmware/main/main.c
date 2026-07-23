@@ -7,6 +7,7 @@
 
 #include "board.h"
 #include "mesh.h"
+#include "ble_bridge.h"
 
 static const char *TAG = "app";
 
@@ -22,6 +23,7 @@ static void on_message(const uint8_t *payload, size_t len, const uint8_t src_id[
 {
     ESP_LOGI(TAG, "odebrano %d B (odszyfrowane) od %02x%02x%02x%02x...: \"%.*s\"",
              (int)len, src_id[0], src_id[1], src_id[2], src_id[3], (int)len, payload);
+    ble_bridge_on_mesh_rx(payload, len, src_id); // przekaz dalej do telefonu, jesli podlaczony po BLE
 }
 
 static bool peer_configured(void)
@@ -44,6 +46,7 @@ void app_main(void)
     ESP_ERROR_CHECK(board_init());
     ESP_ERROR_CHECK(mesh_init());
     mesh_set_rx_callback(on_message);
+    ESP_ERROR_CHECK(ble_bridge_init());
 
     const uint8_t *my_id = mesh_local_id();
     ESP_LOGI(TAG, "wezel wystartowal, lokalne ID: %02x%02x%02x%02x%02x%02x%02x%02x",

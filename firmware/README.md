@@ -10,7 +10,9 @@ deduplikacja po ID wiadomości, rate-limiting per nadawca) + szyfrowanie end-to-
 (Signal Protocol - X3DH + Double Ratchet, przez `libsignal-protocol-c`). Wiadomości
 DATA sa juz szyfrowane; wymiana kluczy miedzy dwoma wezlami na razie idzie bezposrednio
 przez mesh (bez katalogu kluczy na serwerze - to dopiero krok 3). Format ramki i
-szczegóły routingu opisane w `docs/protocol.md`.
+szczegóły routingu opisane w `docs/protocol.md`. Doszedl tez most BLE (`components/ble`)
+- telefon bez internetu laczy sie po Bluetooth Low Energy bezposrednio z wezlem, patrz
+`components/ble/README.md` i `client/web-ble/`.
 
 ## Pobieranie (submoduly!)
 
@@ -63,6 +65,7 @@ components/
   mesh/      - format pakietu, routing (flooding/TTL/dedup/rate-limit), tabela obecności
   crypto/    - X3DH + Double Ratchet: provider (mbedtls), store (NVS), API dla mesh.c
   libsignal/ - CMake-owy wrapper na third_party/libsignal-protocol-c (submodule)
+  ble/       - serwer GATT (NimBLE) - most do telefonu bez internetu, patrz ble/README.md
 main/        - app_main, test aplikacji
 third_party/
   libsignal-protocol-c/ - git submodule, gorna warstwa Signal Protocol
