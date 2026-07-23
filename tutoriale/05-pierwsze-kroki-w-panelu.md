@@ -19,19 +19,22 @@ Przyciski `+ kanał` i `+ kategoria` widoczne są tylko dla roli `admin`.
    kanałów na liście, nic więcej.
 2. Kliknij **`+ kanał`**, wpisz nazwę kanału. Jeśli masz już przynajmniej jedną
    kategorię, panel zapyta do której kategorii go przypisać - wpisz jej nazwę dokładnie
-   tak jak w podpowiedzi, albo zostaw puste, żeby kanał nie należał do żadnej.
+   tak jak w podpowiedzi, albo zostaw puste, żeby kanał nie należał do żadnej. Ostatnie
+   pytanie to temat kanału (`topic`) - też opcjonalne, Enter = brak.
 
 Kanał pojawi się na liście po lewej, pogrupowany pod nazwą kategorii. Kliknij na niego,
-żeby wejść i napisać pierwszą wiadomość - pole na dole ekranu, przycisk "Wyślij".
+żeby wejść i napisać pierwszą wiadomość - pole na dole ekranu, przycisk "Wyślij". Admin
+widzi tam też przycisk **"Edytuj temat"**, gdyby trzeba było go zmienić albo dodać po
+fakcie (pusta wartość = usuwa temat).
 
-**Uwaga:** panel nie ma jeszcze pola do ustawienia tematu kanału (`topic`) ani zmiany
-kolejności (`position`) - to da się zrobić tylko bezpośrednio przez API, np.:
+**Uwaga:** panel nie ma jeszcze sposobu na zmianę kolejności kanałów (`position`) -
+to da się zrobić tylko bezpośrednio przez API, np.:
 
 ```bash
 curl -X POST http://TWOJ-SERWER/v1/channels \
   -H "Authorization: Bearer TWOJ_TOKEN" \
   -H 'Content-Type: application/json' \
-  -d '{"name": "ogloszenia", "topic": "Ważne rzeczy dla wszystkich"}'
+  -d '{"name": "ogloszenia", "position": 5}'
 ```
 
 (Token dostajesz z odpowiedzi `POST /v1/auth/login` - pełna lista endpointów jest w

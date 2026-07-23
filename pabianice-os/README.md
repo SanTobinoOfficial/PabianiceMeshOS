@@ -129,6 +129,7 @@ pracy, celowo odłożony - fundament (konta/role/kanały) musiał powstać pierw
 | GET/POST | `/v1/categories` | dowolny zalogowany (GET) / admin (POST) |
 | GET/POST | `/v1/channels` | próg `min_read_role` (GET, kanały poniżej progu znikają z listy) / admin (POST) |
 | DELETE | `/v1/channels/:id` | admin |
+| PUT | `/v1/channels/:id/topic` | admin |
 | PUT | `/v1/channels/:id/min-post-role` | admin |
 | PUT | `/v1/channels/:id/min-read-role` | admin |
 | GET/POST | `/v1/channels/:id/messages` | próg `min_read_role` (GET) / próg `min_post_role` (POST) |

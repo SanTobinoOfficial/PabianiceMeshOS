@@ -27,6 +27,7 @@ pub fn router(state: AppState, admin_panel_dir: &str) -> Router {
             get(channels::list_channels).post(channels::create_channel),
         )
         .route("/v1/channels/:id", delete(channels::delete_channel))
+        .route("/v1/channels/:id/topic", put(channels::set_topic))
         .route(
             "/v1/channels/:id/min-post-role",
             put(channels::set_min_post_role),

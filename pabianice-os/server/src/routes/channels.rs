@@ -168,6 +168,31 @@ pub async fn delete_channel(
 }
 
 #[derive(Deserialize)]
+pub struct SetTopicReq {
+    pub topic: Option<String>,
+}
+
+pub async fn set_topic(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(channel_id): Path<Uuid>,
+    Json(req): Json<SetTopicReq>,
+) -> Result<(), ApiError> {
+    user.require(Role::Admin)?;
+
+    let result = sqlx::query("update channels set topic = $1 where id = $2")
+        .bind(&req.topic)
+        .bind(channel_id)
+        .execute(&state.db)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound);
+    }
+    Ok(())
+}
+
+#[derive(Deserialize)]
 pub struct SetMinPostRoleReq {
     pub min_post_role: Role,
 }
@@ -274,4 +299,88 @@ pub async fn set_min_read_role(
         return Err(ApiError::NotFound);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod set_topic_tests {
+    use super::*;
+    use sqlx::PgPool;
+
+    #[sqlx::test]
+    async fn admin_sets_and_clears_topic(pool: PgPool) {
+        let channel_id: Uuid =
+            sqlx::query_scalar("insert into channels (name) values ('ogloszenia') returning id")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        let admin = CurrentUser {
+            id: Uuid::new_v4(),
+            username: "admin".into(),
+            role: Role::Admin,
+            token_hash: vec![],
+        };
+        let state = AppState { db: pool.clone() };
+
+        set_topic(
+            State(state.clone()),
+            admin.clone(),
+            Path(channel_id),
+            Json(SetTopicReq {
+                topic: Some("wazne rzeczy".into()),
+            }),
+        )
+        .await
+        .unwrap();
+
+        let topic: Option<String> = sqlx::query_scalar("select topic from channels where id = $1")
+            .bind(channel_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(topic.as_deref(), Some("wazne rzeczy"));
+
+        set_topic(
+            State(state),
+            admin,
+            Path(channel_id),
+            Json(SetTopicReq { topic: None }),
+        )
+        .await
+        .unwrap();
+
+        let topic: Option<String> = sqlx::query_scalar("select topic from channels where id = $1")
+            .bind(channel_id)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+        assert_eq!(topic, None);
+    }
+
+    #[sqlx::test]
+    async fn non_admin_cannot_set_topic(pool: PgPool) {
+        let channel_id: Uuid =
+            sqlx::query_scalar("insert into channels (name) values ('ogloszenia') returning id")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        let member = CurrentUser {
+            id: Uuid::new_v4(),
+            username: "czlonek".into(),
+            role: Role::Member,
+            token_hash: vec![],
+        };
+        let state = AppState { db: pool };
+
+        let result = set_topic(
+            State(state),
+            member,
+            Path(channel_id),
+            Json(SetTopicReq {
+                topic: Some("nope".into()),
+            }),
+        )
+        .await;
+
+        assert!(matches!(result, Err(ApiError::Forbidden)));
+    }
 }

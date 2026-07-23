@@ -147,6 +147,7 @@ async function openChannel(channel) {
         <div class="channel-header">
             <strong># ${channel.name}</strong>
             ${channel.topic ? `<div class="topic">${escapeHtml(channel.topic)}</div>` : ""}
+            ${roleAtLeast("admin") ? '<button class="secondary" id="edit-topic-btn">Edytuj temat</button>' : ""}
         </div>
         <div class="message-list" id="message-list"></div>
         <form class="post-form" id="post-form">
@@ -154,6 +155,23 @@ async function openChannel(channel) {
             <button type="submit">Wyślij</button>
         </form>
     `;
+
+    const editTopicBtn = document.getElementById("edit-topic-btn");
+    if (editTopicBtn) {
+        editTopicBtn.addEventListener("click", async () => {
+            const topic = prompt("Nowy temat kanału (Enter/puste = usuń temat):", channel.topic || "");
+            if (topic === null) return;
+            await api(`/v1/channels/${channel.id}/topic`, {
+                method: "PUT",
+                body: JSON.stringify({ topic: topic || null }),
+            });
+            await loadChannels();
+            const refreshed = state.channels.find((c) => c.id === channel.id);
+            if (refreshed) {
+                await openChannel(refreshed);
+            }
+        });
+    }
 
     document.getElementById("post-form").addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -198,9 +216,11 @@ document.getElementById("new-channel-btn").addEventListener("click", async () =>
         }
     }
 
+    const topic = prompt("Temat kanału (Enter = brak):");
+
     await api("/v1/channels", {
         method: "POST",
-        body: JSON.stringify({ name, category_id: categoryId }),
+        body: JSON.stringify({ name, category_id: categoryId, topic: topic || null }),
     });
     await loadChannels();
 });
