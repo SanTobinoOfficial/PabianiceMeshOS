@@ -14,8 +14,10 @@ kalkulacja pokrycia miasta, fazy wdrożenia).
 ## Status
 
 Wczesny etap — Faza 1 z planu wdrożenia (prototyp dla wąskiego grona znajomych,
-zero zobowiązań prawnych). Obecnie w budowie: warstwa radiowa + prosty routing mesh,
-bez szyfrowania. Szyfrowanie end-to-end dochodzi w kolejnym kroku.
+zero zobowiązań prawnych). Gotowe: warstwa radiowa, routing mesh (flooding/TTL/dedup/
+rate-limit) i szyfrowanie end-to-end (Signal Protocol, `firmware/components/crypto`).
+Klucze na razie leżą w NVS, nie w module bezpiecznym — patrz `firmware/README.md`.
+Następny krok: magazyn wiadomości store-and-forward w `/server`.
 
 **To jeszcze nie jest gotowy produkt.** Nie ma tu żadnej certyfikacji CE/RED, nie ma
 gwarancji bezpieczeństwa. Jeśli budujesz własne urządzenie — sprawdź lokalne limity
