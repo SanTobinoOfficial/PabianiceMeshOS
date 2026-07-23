@@ -32,6 +32,10 @@ pub fn router(state: AppState, admin_panel_dir: &str) -> Router {
             put(channels::set_min_post_role),
         )
         .route(
+            "/v1/channels/:id/min-read-role",
+            put(channels::set_min_read_role),
+        )
+        .route(
             "/v1/channels/:id/messages",
             get(messages::list_messages).post(messages::post_message),
         )

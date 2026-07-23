@@ -58,9 +58,17 @@ pub async fn post_message(
 
 pub async fn list_messages(
     State(state): State<AppState>,
-    _user: CurrentUser,
+    user: CurrentUser,
     Path(channel_id): Path<Uuid>,
 ) -> Result<Json<Vec<MessageResp>>, ApiError> {
+    let min_read_role: Role =
+        sqlx::query_scalar("select min_read_role from channels where id = $1")
+            .bind(channel_id)
+            .fetch_optional(&state.db)
+            .await?
+            .ok_or(ApiError::NotFound)?;
+    user.require(min_read_role)?;
+
     let rows = sqlx::query_as::<_, (Uuid, String, String, DateTime<Utc>)>(
         "select channel_messages.id, users.username, channel_messages.body,
                 channel_messages.created_at
@@ -119,6 +127,16 @@ mod tests {
         .unwrap()
     }
 
+    async fn make_channel_with_read_role(pool: &PgPool, min_read_role: Role) -> Uuid {
+        sqlx::query_scalar(
+            "insert into channels (name, min_read_role) values ('tajne', $1) returning id",
+        )
+        .bind(min_read_role)
+        .fetch_one(pool)
+        .await
+        .unwrap()
+    }
+
     #[sqlx::test]
     async fn member_cannot_post_to_admin_only_channel(pool: PgPool) {
         let member = make_user(&pool, Role::Member).await;
@@ -156,5 +174,39 @@ mod tests {
         .unwrap();
 
         assert_eq!(result.0.body, "ogloszenie");
+    }
+
+    #[sqlx::test]
+    async fn member_cannot_list_messages_of_admin_only_read_channel(pool: PgPool) {
+        let member = make_user(&pool, Role::Member).await;
+        let channel_id = make_channel_with_read_role(&pool, Role::Admin).await;
+        let state = AppState { db: pool };
+
+        let result = list_messages(State(state), member, Path(channel_id)).await;
+
+        assert!(matches!(result, Err(ApiError::Forbidden)));
+    }
+
+    #[sqlx::test]
+    async fn admin_can_list_messages_of_admin_only_read_channel(pool: PgPool) {
+        let admin = make_user(&pool, Role::Admin).await;
+        let channel_id = make_channel_with_read_role(&pool, Role::Admin).await;
+        let state = AppState { db: pool };
+
+        let result = list_messages(State(state), admin, Path(channel_id))
+            .await
+            .unwrap();
+
+        assert!(result.0.is_empty());
+    }
+
+    #[sqlx::test]
+    async fn list_messages_of_unknown_channel_is_not_found(pool: PgPool) {
+        let member = make_user(&pool, Role::Member).await;
+        let state = AppState { db: pool };
+
+        let result = list_messages(State(state), member, Path(Uuid::new_v4())).await;
+
+        assert!(matches!(result, Err(ApiError::NotFound)));
     }
 }

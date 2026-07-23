@@ -34,7 +34,11 @@ realnie skompilowane i przetestowane (`cargo test`, `cargo clippy -D warnings`):
 - **Wiadomości kanałowe** (`server/src/routes/messages.rs`) - pisanie wymaga
   minimalnej roli ustawionej per-kanał (`channels.min_post_role`, domyślnie
   member, admin może podnieść np. kanał ogłoszeń do moderator/admin przez
-  `PUT /v1/channels/:id/min-post-role`).
+  `PUT /v1/channels/:id/min-post-role`). *Czytanie* ma analogiczny, niezależny
+  próg (`channels.min_read_role`, `PUT /v1/channels/:id/min-read-role`) - kanał
+  poniżej progu roli użytkownika jest dla niego całkowicie niewidoczny (znika z
+  `GET /v1/channels`, nie tylko blokuje pisanie), domyślnie też `member` więc
+  zero zmiany zachowania dopóki operator sam nie podniesie progu.
 - **Ustawienia serwera** (`server/src/routes/admin.rs`, `server/src/retention.rs`) -
   retencja wiadomości (dni, 0 = bez limitu, niezależna od retencji `/server`,
   faktycznie egzekwowana co godzinę w tle) i przełącznik federacji - **sama
@@ -109,8 +113,6 @@ pracy, celowo odłożony - fundament (konta/role/kanały) musiał powstać pierw
 ## Czego tu jeszcze brakuje
 
 - Protokołu federacji (patrz wyżej) - na razie tylko flaga w bazie.
-- Uprawnień per-kanał na *czytanie* (na razie tylko pisanie ma próg roli -
-  `min_post_role` - każdy zalogowany widzi każdy kanał).
 - Grupowego szyfrowania E2E kanałów (patrz "różnica modelu zaufania" wyżej).
 - Realnej integracji `identity_pub` z resztą systemu (na razie tylko kolumna).
 - Wsparcia Alpine Linux w `install.sh`.
@@ -125,10 +127,11 @@ pracy, celowo odłożony - fundament (konta/role/kanały) musiał powstać pierw
 | PUT | `/v1/users/:id/role` | admin |
 | PUT | `/v1/users/:id/password` | admin (reset hasła, kończy wszystkie sesje danego usera) |
 | GET/POST | `/v1/categories` | dowolny zalogowany (GET) / admin (POST) |
-| GET/POST | `/v1/channels` | dowolny zalogowany (GET) / admin (POST) |
+| GET/POST | `/v1/channels` | próg `min_read_role` (GET, kanały poniżej progu znikają z listy) / admin (POST) |
 | DELETE | `/v1/channels/:id` | admin |
 | PUT | `/v1/channels/:id/min-post-role` | admin |
-| GET/POST | `/v1/channels/:id/messages` | dowolny zalogowany (GET) / próg `min_post_role` (POST) |
+| PUT | `/v1/channels/:id/min-read-role` | admin |
+| GET/POST | `/v1/channels/:id/messages` | próg `min_read_role` (GET) / próg `min_post_role` (POST) |
 | GET/PUT | `/v1/admin/settings` | moderator (GET) / admin (PUT) |
 
 ## Testy

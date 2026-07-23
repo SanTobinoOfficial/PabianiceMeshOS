@@ -71,8 +71,26 @@ curl -X PUT http://TWOJ-SERWER/v1/channels/ID_KANALU/min-post-role \
   -d '{"min_post_role": "moderator"}'
 ```
 
-(`ID_KANALU` znajdziesz w odpowiedzi `GET /v1/channels`.) To ogranicza tylko *pisanie* -
-czytać kanał może na razie każdy zalogowany, niezależnie od roli.
+(`ID_KANALU` znajdziesz w odpowiedzi `GET /v1/channels`.) To ogranicza tylko *pisanie*.
+
+### Kto może w ogóle widzieć dany kanał
+
+Osobny, niezależny próg (`min_read_role`, domyślnie też `member`) kontroluje
+*widoczność* - kanał poniżej progu roli danego użytkownika znika mu całkowicie z
+listy (nie pojawia się w panelu, nie da się go otworzyć nawet znając jego ID).
+Przydatne np. do kanału dla samych moderatorów/adminów, o którym zwykli
+użytkownicy nie powinni nawet wiedzieć:
+
+```bash
+curl -X PUT http://TWOJ-SERWER/v1/channels/ID_KANALU/min-read-role \
+  -H "Authorization: Bearer TWOJ_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"min_read_role": "moderator"}'
+```
+
+Ustawienie `min_read_role` wyżej niż `min_post_role` nie ma sensu (nikt by nie
+widział kanału, na który niby może pisać) - serwer tego nie pilnuje, to po stronie
+operatora, żeby ustawić oba progi sensownie.
 
 ## Ustawienia serwera
 
