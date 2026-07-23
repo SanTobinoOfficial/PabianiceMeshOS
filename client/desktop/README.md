@@ -84,9 +84,12 @@ przodu, nie tylko pierwsza PreKeySignalMessage), potwierdzanie odbioru (`--ack`)
 `listen` odbierający wiadomości wysłane już po jego starcie (przetestowane w tle
 z realnym opóźnieniem między wysyłką a odbiorem).
 
+Jednoprocesowy test na 21 kolejnych peerach potwierdził, że po wyczerpaniu startowej
+puli 20 one-time prekeys `pcrypto.c` (wspólny z firmware) sam dogenerowuje kolejną
+transzę i 21. peer i tak dostaje poprawny bundle - patrz commit dodający
+`generate_pre_key_batch`/`next_pre_key_id`.
+
 Czego tu jeszcze brakuje:
-- Brak automatycznego dogenerowywania nowych one-time prekeys po wyczerpaniu puli 20 -
-  to ten sam TODO co w firmware (`pcrypto.c`), nie coś nowego wprowadzonego tutaj.
 - `listen` to zwykłe odpytywanie HTTP w pętli (patrz `--interval`), nie push - serwer
   ma wewnętrzny kanał powiadomień (`PUBLISH`/Redis pub-sub pod `notify:<node_id>`),
   ale to infrastruktura pomocnicza dla ewentualnej bramki, nie publiczne API, więc

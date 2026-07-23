@@ -22,9 +22,10 @@
 
 static const char *TAG = "pcrypto";
 
-// tyle one-time prekeys generujemy na start. Zaden mechanizm dogenerowania nowych
-// po wyczerpaniu puli jeszcze nie istnieje - TODO, zanim ktokolwiek naprawde zacznie
-// z tego korzystac dluzej niz kilka dni testow
+// tyle one-time prekeys generujemy na start i tyle samo dogenerowujemy kazdorazowo
+// po wyczerpaniu puli (patrz generate_pre_key_batch/next_pre_key_id nizej) - ID
+// nigdy nie sa uzywane ponownie, nowa transza zawsze zaczyna sie od najwyzszego
+// kiedykolwiek wygenerowanego ID + 1
 #define PRE_KEY_BATCH_SIZE 20
 #define SIGNED_PRE_KEY_ID  1
 
@@ -45,6 +46,44 @@ static void lock_func(void *user_data)
 static void unlock_func(void *user_data)
 {
     xSemaphoreGiveRecursive(s_lock);
+}
+
+// Generuje `count` nowych one-time prekeys od `start_id`, zapisuje w NVS i przesuwa
+// "next_pk_id" o `count` do przodu - to ten licznik pilnuje, zeby po wyczerpaniu
+// pierwszej transzy nie generowac ID, ktore juz kiedys istnialo (patrz next_pre_key_id)
+static esp_err_t generate_pre_key_batch(uint32_t start_id, int count)
+{
+    signal_protocol_key_helper_pre_key_list_node *head = NULL;
+    if (signal_protocol_key_helper_generate_pre_keys(&head, start_id, count, s_ctx) != 0) {
+        return ESP_FAIL;
+    }
+    for (signal_protocol_key_helper_pre_key_list_node *n = head; n != NULL;
+         n = signal_protocol_key_helper_key_list_next(n)) {
+        session_pre_key *pk = signal_protocol_key_helper_key_list_element(n);
+        signal_buffer *rec = NULL;
+        session_pre_key_serialize(&rec, pk);
+        char key[16];
+        snprintf(key, sizeof(key), "pk_%u", (unsigned)session_pre_key_get_id(pk));
+        nvs_set_blob(s_nvs, key, signal_buffer_data(rec), signal_buffer_len(rec));
+        signal_buffer_free(rec);
+    }
+    signal_protocol_key_helper_key_list_free(head);
+
+    nvs_set_u32(s_nvs, "next_pk_id", start_id + (uint32_t)count);
+    nvs_commit(s_nvs);
+    return ESP_OK;
+}
+
+// Najwyzsze kiedykolwiek wygenerowane ID + 1. Brak "next_pk_id" w NVS oznacza
+// tozsamosc sprzed wprowadzenia dogenerowywania prekeys - taka ma dokladnie
+// PRE_KEY_BATCH_SIZE wygenerowanych na starcie (patrz identity_ensure_generated nizej)
+static uint32_t next_pre_key_id(void)
+{
+    uint32_t next = 0;
+    if (nvs_get_u32(s_nvs, "next_pk_id", &next) != ESP_OK) {
+        next = PRE_KEY_BATCH_SIZE + 1;
+    }
+    return next;
 }
 
 static esp_err_t identity_ensure_generated(void)
@@ -71,19 +110,10 @@ static esp_err_t identity_ensure_generated(void)
     signal_protocol_key_helper_generate_registration_id(&reg_id, 0, s_ctx);
     nvs_set_u32(s_nvs, "reg_id", reg_id);
 
-    signal_protocol_key_helper_pre_key_list_node *head = NULL;
-    signal_protocol_key_helper_generate_pre_keys(&head, 1, PRE_KEY_BATCH_SIZE, s_ctx);
-    for (signal_protocol_key_helper_pre_key_list_node *n = head; n != NULL;
-         n = signal_protocol_key_helper_key_list_next(n)) {
-        session_pre_key *pk = signal_protocol_key_helper_key_list_element(n);
-        signal_buffer *rec = NULL;
-        session_pre_key_serialize(&rec, pk);
-        char key[16];
-        snprintf(key, sizeof(key), "pk_%u", (unsigned)session_pre_key_get_id(pk));
-        nvs_set_blob(s_nvs, key, signal_buffer_data(rec), signal_buffer_len(rec));
-        signal_buffer_free(rec);
+    if (generate_pre_key_batch(1, PRE_KEY_BATCH_SIZE) != ESP_OK) {
+        SIGNAL_UNREF(identity);
+        return ESP_FAIL;
     }
-    signal_protocol_key_helper_key_list_free(head);
 
     // timestamp od bootu, nie zegar scienny - nie mamy jeszcze NTP/RTC. Nie
     // sprawdzamy nigdzie wieku signed prekey, wiec na razie to tylko wypelniacz pola
@@ -140,7 +170,8 @@ esp_err_t pcrypto_init(void)
 
 static esp_err_t find_unused_pre_key(uint32_t *id_out, uint8_t *pub_out, size_t pub_cap, size_t *pub_len_out)
 {
-    for (uint32_t id = 1; id <= PRE_KEY_BATCH_SIZE; id++) {
+    uint32_t highest = next_pre_key_id() - 1;
+    for (uint32_t id = 1; id <= highest; id++) {
         char key[16];
         snprintf(key, sizeof(key), "pk_%u", (unsigned)id);
         size_t len = 0;
@@ -209,7 +240,15 @@ esp_err_t pcrypto_local_bundle(pcrypto_bundle_t *out)
     uint8_t pre_key_pub[64];
     size_t pre_key_pub_len = 0;
     if (find_unused_pre_key(&pre_key_id, pre_key_pub, sizeof(pre_key_pub), &pre_key_pub_len) != ESP_OK) {
-        return ESP_ERR_NOT_FOUND;
+        // pula wyczerpana - dogenerowujemy nowa transze (tyle co na starcie) i probujemy
+        // jeszcze raz, zamiast od razu zglaszac ze nie ma juz czym zaczynac nowych sesji
+        if (generate_pre_key_batch(next_pre_key_id(), PRE_KEY_BATCH_SIZE) != ESP_OK) {
+            return ESP_ERR_NOT_FOUND;
+        }
+        ESP_LOGI(TAG, "pula one-time prekeys byla pusta, dogenerowano %d nowych", PRE_KEY_BATCH_SIZE);
+        if (find_unused_pre_key(&pre_key_id, pre_key_pub, sizeof(pre_key_pub), &pre_key_pub_len) != ESP_OK) {
+            return ESP_ERR_NOT_FOUND;
+        }
     }
 
     char spk_key[16];
