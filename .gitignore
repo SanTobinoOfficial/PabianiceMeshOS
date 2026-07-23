@@ -1,0 +1,18 @@
+# Rust (/server)
+server/target/
+**/*.rs.bk
+
+# ESP-IDF (/firmware)
+firmware/build/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/managed_components/
+firmware/dependencies.lock
+
+# sekrety lokalne
+.env
+*.env.local
+
+# byle jakie smieci edytorów/OS
+.DS_Store
+*.swp
