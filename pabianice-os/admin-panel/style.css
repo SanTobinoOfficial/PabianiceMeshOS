@@ -45,6 +45,11 @@ input, textarea {
 .hint { color: var(--mute); font-size: 0.9em; }
 .error { color: var(--danger); min-height: 1.2em; }
 
+/* #foo[hidden] ma wyzsza specyficznosc niz #foo, wiec poprawnie bije "display: flex"
+   ponizej gdy JS ustawi atrybut hidden - bez tego oba ekrany (login/app) renderuja
+   sie jednoczesnie, bo id-owy selektor bije domyslne [hidden] { display: none } */
+#login-screen[hidden], #app-screen[hidden] { display: none; }
+
 #login-screen {
     height: 100vh;
     display: flex;

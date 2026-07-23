@@ -91,6 +91,7 @@ async function enterApp() {
     document.getElementById("app-screen").hidden = false;
     document.getElementById("whoami").textContent = `${state.username} (${state.role})`;
     document.getElementById("new-channel-btn").hidden = !roleAtLeast("admin");
+    document.getElementById("new-category-btn").hidden = !roleAtLeast("admin");
     document.getElementById("show-users-btn").hidden = !roleAtLeast("admin");
     document.getElementById("show-settings-btn").hidden = !roleAtLeast("moderator");
     await loadChannels();
@@ -186,7 +187,28 @@ async function loadMessages(channelId) {
 document.getElementById("new-channel-btn").addEventListener("click", async () => {
     const name = prompt("Nazwa kanału:");
     if (!name) return;
-    await api("/v1/channels", { method: "POST", body: JSON.stringify({ name }) });
+
+    let categoryId = null;
+    if (state.categories.length > 0) {
+        const names = state.categories.map((c) => c.name).join(", ");
+        const choice = prompt(`Kategoria (Enter = bez kategorii). Istniejące: ${names}`);
+        if (choice) {
+            const match = state.categories.find((c) => c.name === choice);
+            categoryId = match ? match.id : null;
+        }
+    }
+
+    await api("/v1/channels", {
+        method: "POST",
+        body: JSON.stringify({ name, category_id: categoryId }),
+    });
+    await loadChannels();
+});
+
+document.getElementById("new-category-btn").addEventListener("click", async () => {
+    const name = prompt("Nazwa kategorii:");
+    if (!name) return;
+    await api("/v1/categories", { method: "POST", body: JSON.stringify({ name }) });
     await loadChannels();
 });
 
