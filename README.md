@@ -54,7 +54,8 @@ model co w Signalu i Meshtastic.
 - `docs/` — dokumentacja protokołu (`docs/protocol.md` — format ramki, typy pakietów,
   routing/TTL/dedup, rate-limiting, znane ograniczenia), pełny plan projektu.
 - `hardware/` — schematy, BOM, pliki STL obudowy.
-- `tutoriale/` — instrukcje krok po kroku dla ludzi, którzy chcą sami zbudować węzeł.
+- `tutoriale/` — instrukcje krok po kroku: budowa węzła mesh (1-3) i stawianie
+  własnego serwera Pabianice OS (4-5).
 - `pabianice-os/` — dystrybucja do self-hostingu własnego serwera z kanałami,
   rolami i panelem admina (Rust/Axum/Postgres, panel admina jako statyczny
   HTML/JS), z opcjonalną, domyślnie wyłączoną federacją z siecią główną. Osobny

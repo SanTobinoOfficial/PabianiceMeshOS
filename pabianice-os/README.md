@@ -9,6 +9,10 @@ To jest osobny produkt od `/server` (który jest DM store-and-forward + katalog
 kluczy dla głównej sieci mesh, patrz `server/README.md`) - operator stawia to u
 siebie dla swojej społeczności, niezależnie od głównej sieci projektu.
 
+Instrukcja krok po kroku (instalacja + pierwsze użycie panelu):
+[`tutoriale/04-stawianie-wlasnego-serwera.md`](../tutoriale/04-stawianie-wlasnego-serwera.md),
+[`tutoriale/05-pierwsze-kroki-w-panelu.md`](../tutoriale/05-pierwsze-kroki-w-panelu.md).
+
 ## Stan na teraz
 
 Działający szkielet - konta, role, kanały, wiadomości, panel admina, wszystko
