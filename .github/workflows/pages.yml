@@ -31,9 +31,10 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
-          # domyślnie ta akcja tylko odczytuje istniejącą konfigurację Pages, nie
-          # włącza jej - repo jeszcze nigdy nie miało Pages ustawionego, więc trzeba
-          # jawnie kazać jej to zrobić
+          # Pages zostal wlaczony recznie w Settings (GITHUB_TOKEN akcji nie ma do tego
+          # uprawnien - "Resource not accessible by integration" przy pierwszej probie).
+          # enablement:true zostaje jako no-op na wypadek gdyby kiedys trzeba bylo
+          # odtworzyc to od zera.
           enablement: true
 
       - name: Upload site artifact
