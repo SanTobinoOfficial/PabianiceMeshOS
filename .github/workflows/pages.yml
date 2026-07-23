@@ -8,12 +8,14 @@ on:
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
+# klasyczny tryb "Deploy from a branch" zamiast Pages-przez-Actions - ten drugi wymaga
+# od GITHUB_TOKEN uprawnien administracyjnych ktorych domyslny token joba nie ma
+# ("Resource not accessible by integration" przy probie stworzenia Pages site przez API,
+# sprawdzone w praktyce dwa razy). Zwykly `contents: write` + push na gh-pages dziala
+# zawsze, bo to nie API Pages, tylko zwykly git push.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# jeden deploy na raz - kolejny push nie powinien przerywać trwającego wdrożenia
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -21,27 +23,13 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+      - name: Publikuj website/ na branchu gh-pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          # Pages zostal wlaczony recznie w Settings (GITHUB_TOKEN akcji nie ma do tego
-          # uprawnien - "Resource not accessible by integration" przy pierwszej probie).
-          # enablement:true zostaje jako no-op na wypadek gdyby kiedys trzeba bylo
-          # odtworzyc to od zera.
-          enablement: true
-
-      - name: Upload site artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: "./website"
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./website
+          publish_branch: gh-pages
