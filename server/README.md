@@ -17,9 +17,10 @@ Szkielet - trzy funkcje z rozdz. 10.1 planu:
    (rozdz. 10.2 planu), Postgres jako trwały storage + Redis pub/sub jako "nudge" dla
    ewentualnego gatewaya trzymającego otwarte połączenie (opcjonalny - jak Redis nie
    działa, polling przez Postgres i tak znajdzie wiadomość).
-3. **Lista zablokowanych HWID** (`/v1/blocklist`, rozdz. 7.3.1 planu) - **bez autoryzacji
-   na tym etapie**, nie wystawiać tego publicznie. Panel admina z 2FA (rozdz. 10.2) to
-   osobny, późniejszy kawałek pracy.
+3. **Lista zablokowanych HWID** (`/v1/blocklist`, rozdz. 7.3.1 planu) - chronione
+   bearer tokenem (`ADMIN_TOKEN` w env, patrz `.env.example` i `src/auth.rs`). Pełny
+   panel webowy z kontami i 2FA to Pabianice OS (rozdz. 10.4), osobny, późniejszy etap -
+   na razie to jeden statyczny token do jednego operatora serwera.
 
 ## Uruchomienie lokalnie
 
@@ -48,10 +49,11 @@ Serwer nasłuchuje na `:8080` (konfigurowalne przez `BIND_ADDR`).
 
 ## Czego tu jeszcze brakuje
 
-- Autoryzacji na `/v1/blocklist` i na `DELETE /v1/messages/id/:id`.
+- Autoryzacji na `DELETE /v1/messages/id/:id` (na razie chroniony jest tylko blocklist).
 - Rate-limitingu per node_id na `/v1/messages` (serwer na razie ufa, że to firmware
   już przefiltrował nadużycia lokalnie - rozdz. 7.2 planu; warto mieć obronę i tutaj).
-- Panelu administracyjnego (rozdz. 10.2) - na razie tylko surowe REST API.
+- Panelu administracyjnego webowego z kontami i 2FA (Pabianice OS, rozdz. 10.4) - na
+  razie tylko surowe REST API za jednym statycznym tokenem.
 - Testów integracyjnych względem realnej bazy.
 
 Uruchomienie tego serwera dla kogokolwiek poza wąskim gronem znajomych to Faza 3 planu -

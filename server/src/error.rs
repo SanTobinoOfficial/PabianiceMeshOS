@@ -11,6 +11,8 @@ pub enum ApiError {
     BadRequest(String),
     #[error("urzadzenie zablokowane")]
     Blocked,
+    #[error("brak albo zly token administratora")]
+    Unauthorized,
     #[error("blad bazy danych")]
     Db(#[from] sqlx::Error),
 }
@@ -21,6 +23,7 @@ impl IntoResponse for ApiError {
             ApiError::NotFound => StatusCode::NOT_FOUND,
             ApiError::BadRequest(_) => StatusCode::BAD_REQUEST,
             ApiError::Blocked => StatusCode::FORBIDDEN,
+            ApiError::Unauthorized => StatusCode::UNAUTHORIZED,
             ApiError::Db(e) => {
                 tracing::error!("db error: {e}");
                 StatusCode::INTERNAL_SERVER_ERROR

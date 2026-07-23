@@ -1,3 +1,4 @@
+mod auth;
 mod error;
 mod nodeid;
 mod retention;
@@ -27,6 +28,8 @@ async fn main() -> anyhow::Result<()> {
         .and_then(|v| v.parse().ok())
         .unwrap_or(90);
     let bind_addr = env::var("BIND_ADDR").unwrap_or_else(|_| "0.0.0.0:8080".into());
+    let admin_token = env::var("ADMIN_TOKEN")
+        .map_err(|_| anyhow::anyhow!("ADMIN_TOKEN nie ustawiony - wymagany do /v1/blocklist"))?;
 
     let db = PgPoolOptions::new()
         .max_connections(10)
@@ -43,6 +46,7 @@ async fn main() -> anyhow::Result<()> {
         db,
         redis,
         retention_days,
+        admin_token,
     };
 
     let app = routes::router(state);

@@ -9,9 +9,8 @@ use crate::state::AppState;
 // Blokowanie po HWID, tylko w tym trybie scentralizowanym (rozdz. 7.3.1 planu) - w
 // trybie czysto lokalnym P2P nie ma jak tego bezpiecznie zrobic, patrz 7.3.2.
 //
-// TODO: to wszystko powinno wymagac uwierzytelnienia administratora (rozdz. 10.2 planu -
-// "panel administracyjny z uwierzytelnianiem dwuskładnikowym"), ktorego jeszcze nie ma.
-// Na razie otwarte, bo to dopiero szkielet - nie wystawiac tego publicznie bez auth.
+// Wymaga bearer tokena administratora (routes/mod.rs, auth.rs) - pelny panel webowy
+// z kontami i 2FA to dopiero Pabianice OS (rozdz. 10.4 planu), swiadomie pozniejszy etap.
 
 #[derive(Deserialize)]
 pub struct BlockReq {
