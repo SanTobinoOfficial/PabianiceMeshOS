@@ -1,0 +1,20 @@
+title: "[Pokaż] "
+labels: ["show-and-tell"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Zbudowałeś własny węzeł? Zrobiłeś test zasięgu w swojej okolicy? Wrzuć zdjęcia
+        i wyniki - to dokładnie ten model rozwoju sieci, o którym mowa w rozdz. 12.5 planu
+        (społeczność sama buduje i rozstawia węzły).
+  - type: textarea
+    attributes:
+      label: Co zbudowałeś / przetestowałeś
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Lokalizacja testu (opcjonalnie, na ile chcesz być precyzyjny)
+  - type: input
+    attributes:
+      label: Zmierzony zasięg (jeśli robiłeś test zasięgu)

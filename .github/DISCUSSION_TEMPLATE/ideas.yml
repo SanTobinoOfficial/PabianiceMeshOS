@@ -1,0 +1,16 @@
+title: "[Pomysł] "
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pomysły na rozwój projektu - nowe funkcje, inne podejście do routingu, coś
+        z hardware'u, cokolwiek. Nie musi być dopracowane, chodzi o dyskusję.
+  - type: textarea
+    attributes:
+      label: Opisz pomysł
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Jaki problem to rozwiązuje / czemu służy

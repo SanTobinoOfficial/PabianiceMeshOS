@@ -1,0 +1,17 @@
+title: "[Pytanie] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pytania o montaż, firmware, protokół albo cokolwiek innego związanego z projektem.
+        Zanim zapytasz, rzuć okiem na `tutoriale/` i `docs/` - część odpowiedzi już tam jest.
+  - type: textarea
+    attributes:
+      label: Twoje pytanie
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Sprzęt / wersja firmware (jeśli dotyczy)
+      description: np. ESP32-S3-DevKitC-1 + Ebyte E22-900M22S, commit/tag firmware

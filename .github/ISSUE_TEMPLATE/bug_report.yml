@@ -1,0 +1,31 @@
+name: Zgłoszenie błędu
+description: Coś nie działa - firmware, build, dokumentacja
+labels: ["bug"]
+body:
+  - type: dropdown
+    attributes:
+      label: Gdzie w repo
+      options:
+        - firmware (radio/mesh/crypto)
+        - server
+        - client
+        - docs / tutoriale
+        - hardware
+        - inne
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Co się dzieje
+      description: Co zrobiłeś, co się stało, co się miało stać
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Logi / komunikaty błędów
+      description: Wklej output z `idf.py monitor` albo builda, jeśli masz
+      render: shell
+  - type: input
+    attributes:
+      label: Sprzęt / środowisko
+      description: np. ESP32-S3-DevKitC-1, ESP-IDF v5.x, commit/tag

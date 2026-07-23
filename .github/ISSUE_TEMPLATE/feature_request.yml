@@ -1,0 +1,19 @@
+name: Propozycja zmiany
+description: Konkretna, dopracowana propozycja funkcji lub zmiany
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Jeśli to raczej luźny pomysł do przedyskutowania niż gotowa propozycja,
+        lepiej pasuje do [Discussions → Pomysły](../../discussions/categories/ideas)
+        niż do issue.
+  - type: textarea
+    attributes:
+      label: Co proponujesz
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Jak to się ma do obecnej architektury / planu
+      description: Patrz docs/Pabianice_Comms_Plan_Pelny.docx i README poszczególnych modułów

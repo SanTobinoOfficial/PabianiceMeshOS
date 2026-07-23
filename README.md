@@ -80,3 +80,15 @@ i pilnuje spójności architektury między poszczególnymi modułami.
 ## Budowanie
 
 Instrukcje budowania firmware i montażu sprzętu: patrz `tutoriale/` i `firmware/README.md`.
+
+## Licencja
+
+GNU GPLv3 (`LICENSE`) - ten sam model co Meshtastic, do którego projekt się często
+odwołuje: kod zostaje otwarty, także w formach pochodnych. Chcesz pomóc? Zobacz
+`CONTRIBUTING.md`. Zasady społeczności: `CODE_OF_CONDUCT.md`.
+
+## Strona i community
+
+Strona projektu: `website/` (wdrażana automatycznie na GitHub Pages).
+Pytania, pomysły, pokazywanie zbudowanych węzłów →
+[GitHub Discussions](https://github.com/SanTobinoOfficial/PabianiceMeshOS/discussions).
