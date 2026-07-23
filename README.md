@@ -19,6 +19,9 @@ rate-limit), szyfrowanie end-to-end (Signal Protocol, `firmware/components/crypt
 szkielet serwera store-and-forward + katalogu kluczy (`/server`, Rust/Axum/Postgres/Redis)
 oraz szkielet Pabianice OS — serwera kanałów z kontami/rolami i panelem admina
 (`/pabianice-os`, patrz `pabianice-os/README.md` co dokładnie działa i czego brakuje).
+Dochodzą też dwa realne klienty: `client/desktop` (CLI na komputer, internet/ethernet
+do `/server`) i BLE — `firmware/components/ble` + `client/web-ble` (telefon bez
+internetu łączy się bezpośrednio z węzłem po Bluetooth Low Energy).
 Klucze na razie leżą w NVS, nie w module bezpiecznym — patrz `firmware/README.md`.
 
 **To jeszcze nie jest gotowy produkt.** Nie ma tu żadnej certyfikacji CE/RED, nie ma
@@ -50,12 +53,15 @@ model co w Signalu i Meshtastic.
   libsignal-protocol-c) i warstwa aplikacyjna.
 - `server/` — magazyn wiadomości store-and-forward + katalog kluczy publicznych
   (dochodzi w kroku 3).
-- `client/` — szkielet aplikacji mobilnej, na razie tylko interfejs BLE do urządzenia.
+- `client/` — dwie drogi łączenia się z siecią: `desktop/` (klient CLI na komputer,
+  przez internet/ethernet do `/server`, ten sam kod Signal Protocol co firmware) i
+  `web-ble/` (strona Web Bluetooth dla telefonu bez internetu, łączy się bezpośrednio
+  z węzłem po BLE, patrz `client/README.md`).
 - `docs/` — dokumentacja protokołu (`docs/protocol.md` — format ramki, typy pakietów,
   routing/TTL/dedup, rate-limiting, znane ograniczenia), pełny plan projektu.
 - `hardware/` — schematy, BOM, pliki STL obudowy.
-- `tutoriale/` — instrukcje krok po kroku: budowa węzła mesh (1-3) i stawianie
-  własnego serwera Pabianice OS (4-5).
+- `tutoriale/` — instrukcje krok po kroku: budowa węzła mesh (1-3), stawianie
+  własnego serwera Pabianice OS (4-5) i łączenie się jako klient (6).
 - `pabianice-os/` — dystrybucja do self-hostingu własnego serwera z kanałami,
   rolami i panelem admina (Rust/Axum/Postgres, panel admina jako statyczny
   HTML/JS), z opcjonalną, domyślnie wyłączoną federacją z siecią główną. Osobny
