@@ -80,7 +80,8 @@ Projekt idzie fazami, każda ma być w pełni legalna sama w sobie:
 
 Szczegóły (w tym cała analiza prawna UKE/RED/RODO/CEIDG) w `docs/Pabianice_Comms_Plan_Pelny.docx`.
 Szablony regulaminu i polityki prywatności pod Fazę 3 (jeszcze nie obowiązują) —
-`docs/legal/`.
+`docs/legal/`. Konkretna checklista gotowości do przejścia z Fazy 1 do Fazy 2 —
+`docs/status-faz.md`.
 
 ## Prowadzenie projektu
 
