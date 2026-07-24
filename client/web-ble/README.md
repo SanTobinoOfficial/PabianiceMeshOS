@@ -12,6 +12,11 @@ Protokół (UUID-y, format ramek `[node_id 8B][plaintext]`) opisany w
 `firmware/components/ble/README.md` - to tamten komponent (`components/ble`) jest
 drugą stroną tego połączenia.
 
+Węzeł wymaga sparowania (bonding, Just Works - patrz jego README, sekcja "Model
+zaufania") - przy pierwszym połączeniu system operacyjny telefonu/komputera pokaże
+własny systemowy ekran parowania Bluetooth (nie tej strony), zanim wysyłka/odbiór
+zadziała. To jednorazowe, kolejne połączenia z tym samym węzłem nie proszą ponownie.
+
 ## Uruchomienie
 
 Zwykły statyczny HTML/CSS/JS, bez builda i bez zależności - jak reszta `website/` i

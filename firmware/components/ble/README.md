@@ -42,20 +42,34 @@ zaakceptować negocjację MTU - Web Bluetooth robi to sam, nie trzeba nic woła�
 
 ## Model zaufania
 
-Ten most **nie dodaje żadnego nowego zaufania** - telefon ufa temu jednemu wezlowi
-tylko w zakresie przekazania ruchu (routing), tak jak każdy inny wezeł w mesh. Treść
-i tak jest E2E zaszyfrowana Signal Protocol między nadawcą a odbiorcą - węzeł-brama
-widzi ciphertext identycznie jak każdy inny węzeł po drodze, plaintext krąży tylko
-lokalnie między nim a telefonem po BLE (fizyczna bliskość, nie eter LoRa). BLE samo w
-sobie nie jest szyfrowane na tym etapie (`ble_gap_adv_params`/`sync_cb` nie ustawiają
-pairing/bonding) - do zrobienia zanim to wyjdzie poza testy na stole, patrz "Czego
-brakuje" niżej.
+Ten most **nie dodaje żadnego nowego zaufania kryptograficznego** - telefon ufa temu
+jednemu wezlowi tylko w zakresie przekazania ruchu (routing), tak jak każdy inny
+wezeł w mesh. Treść i tak jest E2E zaszyfrowana Signal Protocol między nadawcą a
+odbiorcą - węzeł-brama widzi ciphertext identycznie jak każdy inny węzeł po drodze,
+plaintext krąży tylko lokalnie między nim a telefonem po BLE (fizyczna bliskość, nie
+eter LoRa).
+
+Samo łącze BLE jest sparowane (bonding, LE Secure Connections, `sm_sc=1`) - węzeł
+wymusza parowanie zaraz po połączeniu (`ble_gap_security_initiate` w
+`BLE_GAP_EVENT_CONNECT`), a charakterystyka RX dodatkowo ma flagę
+`BLE_GATT_CHR_F_WRITE_ENC`, więc zapis jest odrzucany na poziomie ATT, dopóki link nie
+jest zaszyfrowany. Klucze bondingu są trwałe (NVS, `CONFIG_BT_NIMBLE_NVS_PERSIST=y`) -
+telefon paruje się raz, nie przy każdym połączeniu.
+
+To jest parowanie **Just Works** (`sm_mitm=0`) - węzeł nie ma ekranu ani klawiatury do
+wpisania/potwierdzenia PIN-u, więc nie da się tu zrobić uwierzytelnienia odpornego na
+aktywny atak man-in-the-middle *w trakcie samego parowania* (ktoś aktywnie
+przechwytujący i podszywający się pod obie strony dokładnie w momencie pierwszego
+parowania mógłby się wstawić w środek). Chroni to natomiast poprawnie przed biernym
+podsłuchem/zapisem przez kogokolwiek innego w zasięgu BLE po sparowaniu - a to był
+realny problem wcześniej (dowolny telefon mógł czytać/pisać bez żadnego uwierzytelnienia).
+Pełna ochrona przed MITM przy parowaniu wymagałaby wyświetlacza/przycisku na węźle do
+potwierdzenia numerycznego (Numeric Comparison) - poza zakresem obecnego sprzętu.
 
 ## Czego tu jeszcze brakuje
 
-- Parowania/szyfrowania samego łącza BLE (dziś dowolny telefon w zasięgu może się
-  połączyć i pisać/czytać na tej usłudze - w praktyce ograniczone tylko fizyczną
-  bliskością, ale to nie jest security boundary).
+- Ochrony przed MITM w trakcie samego parowania (patrz wyżej - wymaga wyświetlacza na
+  węźle, którego obecny sprzęt nie ma).
 - Wsparcia wielu jednoczesnych połączeń telefonów do jednego węzła (NimBLE to
   udźwignie, ten kod na razie śledzi tylko jedno `conn_handle` dla TX notify).
 - Realnego testu na sprzęcie - napisane i zweryfikowane pod kątem zgodności z API

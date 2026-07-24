@@ -16,6 +16,7 @@
 #include "host/util/util.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
+#include "store/config/ble_store_config.h"
 
 #include "mesh.h"
 #include "pkt.h"
@@ -76,9 +77,12 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
         .uuid = BLE_UUID128_DECLARE(SVC_UUID),
         .characteristics = (struct ble_gatt_chr_def[]) {
             {
+                // _ENC wymusza sparowane/zaszyfrowane polaczenie zanim ATT w ogole
+                // przepusci zapis do gatt_svr_chr_access - patrz sekcja o bondingu
+                // w ble_bridge_init() i firmware/components/ble/README.md
                 .uuid = BLE_UUID128_DECLARE(CHR_RX_UUID),
                 .access_cb = gatt_svr_chr_access,
-                .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_NO_RSP,
+                .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_NO_RSP | BLE_GATT_CHR_F_WRITE_ENC,
             },
             {
                 .uuid = BLE_UUID128_DECLARE(CHR_TX_UUID),
@@ -124,12 +128,34 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg)
     case BLE_GAP_EVENT_CONNECT:
         if (event->connect.status != 0) {
             ble_advertise(); // polaczenie nie wyszlo, wracamy do rozglaszania
+            return 0;
+        }
+        // Wymuszamy parowanie/szyfrowanie od razu po polaczeniu (Just Works - ten
+        // wezel nie ma ekranu ani klawiatury do wpisania PIN-u), zamiast czekac az
+        // telefon sam o to poprosi przy pierwszym zapisie. Bez tego telefon moglby
+        // np. zdazyc zasubskrybowac notyfikacje TX przed sparowaniem - BLE_GATT_CHR_F_WRITE_ENC
+        // na RX i tak by zablokowal zapis, ale to i tak lepiej ustalic raz na wstepie
+        {
+            int rc = ble_gap_security_initiate(event->connect.conn_handle);
+            if (rc != 0) {
+                ESP_LOGW(TAG, "ble_gap_security_initiate nie wyszlo: %d", rc);
+            }
         }
         return 0;
 
     case BLE_GAP_EVENT_DISCONNECT:
         s_tx_subscribed = false;
         ble_advertise();
+        return 0;
+
+    case BLE_GAP_EVENT_ENC_CHANGE:
+        if (event->enc_change.status == 0) {
+            ESP_LOGI(TAG, "polaczenie zaszyfrowane/sparowane (conn_handle=%d)",
+                     event->enc_change.conn_handle);
+        } else {
+            ESP_LOGW(TAG, "parowanie/szyfrowanie nie wyszlo (status=%d) - zapis na RX i tak zostanie odrzucony",
+                      event->enc_change.status);
+        }
         return 0;
 
     case BLE_GAP_EVENT_SUBSCRIBE:
@@ -185,6 +211,24 @@ esp_err_t ble_bridge_init(void)
 
     ble_hs_cfg.sync_cb = ble_app_on_sync;
     ble_hs_cfg.reset_cb = ble_app_on_reset;
+
+    // Bonding (parowanie Just Works - wezel nie ma ekranu/klawiatury na PIN, wiec
+    // sm_mitm=0). Bez tego dowolny telefon w zasiegu mogl czytac/pisac na tej
+    // usludze bez zadnego uwierzytelnienia - patrz README tego komponentu, sekcja
+    // "Model zaufania". LE Secure Connections (sm_sc=1) zamiast przestarzalego
+    // legacy pairing. Klucze bondingu wymieniamy w obie strony, zeby telefon tez
+    // mogl zweryfikowac tozsamosc wezla przy kolejnych polaczeniach.
+    ble_hs_cfg.sm_bonding = 1;
+    ble_hs_cfg.sm_mitm = 0;
+    ble_hs_cfg.sm_sc = 1;
+    ble_hs_cfg.sm_our_key_dist = BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
+    ble_hs_cfg.sm_their_key_dist = BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
+    ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
+
+    // Trwaly magazyn kluczy bondingu (NVS, jesli CONFIG_BT_NIMBLE_NVS_PERSIST=y w
+    // sdkconfig.defaults) - bez tego telefon musialby parowac sie na nowo po kazdym
+    // restarcie wezla
+    ble_store_config_init();
 
     ble_svc_gap_init();
     ble_svc_gatt_init();
