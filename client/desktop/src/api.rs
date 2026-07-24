@@ -113,14 +113,19 @@ impl Api {
             );
         }
         let body: BundleResp = resp.json()?;
-        let one_time = body.one_time_prekey.ok_or_else(|| {
-            anyhow::anyhow!("serwer nie ma juz zadnego wolnego one-time prekey dla {node_id_hex}")
-        })?;
+        // Brak opublikowanego one-time prekey (serwer juz rozdal jedyny albo wezel
+        // jeszcze zadnego nie opublikowal) nie jest bledem - X3DH dziala tez bez OPK,
+        // kosztem slabszego forward secrecy pierwszej wiadomosci (patrz pcrypto.c,
+        // ktory teraz to samo toleruje po stronie parsera bundla). Puste pole = brak.
+        let (pre_key_id, pre_key_pub) = match body.one_time_prekey {
+            Some(otp) => (otp.prekey_id as u32, hex::decode(otp.prekey_pub)?),
+            None => (0, Vec::new()),
+        };
 
         Ok(BundleFields {
             registration_id: body.registration_id as u32,
-            pre_key_id: one_time.prekey_id as u32,
-            pre_key_pub: hex::decode(one_time.prekey_pub)?,
+            pre_key_id,
+            pre_key_pub,
             signed_pre_key_id: body.signed_prekey_id as u32,
             signed_pre_key_pub: hex::decode(body.signed_prekey_pub)?,
             signed_pre_key_sig: hex::decode(body.signed_prekey_sig)?,

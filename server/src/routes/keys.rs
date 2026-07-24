@@ -85,9 +85,9 @@ pub struct BundleResp {
     pub signed_prekey_id: i32,
     pub signed_prekey_pub: String,
     pub signed_prekey_sig: String,
-    // brak = pula one-time prekeys pustа. X3DH dziala tez bez niego (troche slabszy
-    // forward secrecy na pierwszej wiadomosci), ale firmware (components/crypto)
-    // na razie tego przypadku nie obsluguje - TODO po obu stronach
+    // brak = pula one-time prekeys pusta. X3DH dziala tez bez niego (troche slabszy
+    // forward secrecy na pierwszej wiadomosci) - firmware/components/crypto/pcrypto.c
+    // (wspolny z client/desktop) to teraz poprawnie obsluguje po obu stronach
     pub one_time_prekey: Option<OneTimePrekeyOut>,
 }
 

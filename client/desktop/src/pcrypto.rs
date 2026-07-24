@@ -237,4 +237,19 @@ mod tests {
         fields.identity_pub = vec![0u8; 256];
         assert!(encode_bundle(&fields).is_err());
     }
+
+    #[test]
+    fn roundtrips_bundle_without_one_time_prekey() {
+        // pcrypto_process_bundle (C, wspolny z firmware) toleruje pusty one-time
+        // prekey - X3DH dziala tez bez niego, patrz komentarz w pcrypto.c
+        let mut original = sample_fields();
+        original.pre_key_id = 0;
+        original.pre_key_pub = Vec::new();
+
+        let encoded = encode_bundle(&original).unwrap();
+        let decoded = decode_bundle(&encoded).unwrap();
+        assert_eq!(decoded.pre_key_id, 0);
+        assert!(decoded.pre_key_pub.is_empty());
+        assert_eq!(decoded.identity_pub, original.identity_pub);
+    }
 }

@@ -89,6 +89,13 @@ puli 20 one-time prekeys `pcrypto.c` (wspólny z firmware) sam dogenerowuje kole
 transzę i 21. peer i tak dostaje poprawny bundle - patrz commit dodający
 `generate_pre_key_batch`/`next_pre_key_id`.
 
+Osobno przetestowano scenariusz, w którym `/server` akurat nie ma już żadnego
+opublikowanego one-time prekey dla danego węzła (bo rozdał jedyny innemu peerowi,
+zanim ten węzeł zdążył opublikować nowy) - `pcrypto_process_bundle` i `fetch_bundle`
+poprawnie traktują to jako dopuszczalny przypadek X3DH bez OPK (nie błąd), klient
+wypisuje ostrzeżenie o słabszym forward secrecy pierwszej wiadomości i mimo to
+kończy wymianę sukcesem.
+
 Czego tu jeszcze brakuje:
 - `listen` to zwykłe odpytywanie HTTP w pętli (patrz `--interval`), nie push - serwer
   ma wewnętrzny kanał powiadomień (`PUBLISH`/Redis pub-sub pod `notify:<node_id>`),

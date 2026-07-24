@@ -113,6 +113,12 @@ fn main() -> Result<()> {
             if !identity.has_session(&peer_id) {
                 println!("brak sesji z {to}, pobieram jego bundle z serwera...");
                 let peer_bundle = api.fetch_bundle(&to)?;
+                if peer_bundle.pre_key_pub.is_empty() {
+                    println!(
+                        "uwaga: {to} nie ma juz opublikowanego one-time prekey - \
+                         sesja X3DH bez OPK (slabszy forward secrecy pierwszej wiadomosci)"
+                    );
+                }
                 identity.process_peer_bundle(&peer_id, &peer_bundle)?;
                 println!("sesja X3DH ustanowiona");
             }

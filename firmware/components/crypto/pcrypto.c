@@ -358,9 +358,17 @@ esp_err_t pcrypto_process_bundle(const uint8_t peer_id[PCRYPTO_PEER_ID_LEN], con
 
 #undef NEED
 
+    // brak one-time prekey (pre_key_pub_len == 0) jest dopuszczalny w X3DH - libsignal
+    // (session_builder.c) sam obsluguje bundle bez OPK, kosztem slabszego forward
+    // secrecy pierwszej wiadomosci. Zdarza sie w praktyce, gdy /server juz rozdal
+    // jedyny opublikowany OPK innemu peerowi, zanim ten node zdazyl opublikowac nowy.
     ec_public_key *pre_key_pub = NULL, *spk_pub = NULL, *identity_pub = NULL;
-    if (curve_decode_point(&pre_key_pub, pre_key_pub_data, pre_key_pub_len, s_ctx) != 0) {
-        return ESP_FAIL;
+    if (pre_key_pub_len > 0) {
+        if (curve_decode_point(&pre_key_pub, pre_key_pub_data, pre_key_pub_len, s_ctx) != 0) {
+            return ESP_FAIL;
+        }
+    } else {
+        pre_key_id = 0;
     }
     if (curve_decode_point(&spk_pub, spk_pub_data, spk_pub_len, s_ctx) != 0) {
         SIGNAL_UNREF(pre_key_pub);
