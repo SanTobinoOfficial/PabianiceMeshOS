@@ -56,7 +56,17 @@ static bool rate_limited(const uint8_t node_id[PKT_NODE_ID_LEN])
     }
 
     if (free_slot < 0) {
-        free_slot = 0; // tabela pelna - TODO eviction madrzejsza niz "nadpisz pierwszy z brzegu"
+        // tabela pelna - zwalniamy wpis z najstarszym window_start_us (ten sam wzorzec
+        // co presence_touch w presence.c), nie zawsze slot 0. Bez tego nowy nadawca
+        // zawsze kasowalby licznik konkretnie sledzonego node'a (np. wlasnie
+        // ukaranego za przekroczenie limitu) zamiast prawdziwie najstarszego wpisu
+        int oldest = 0;
+        for (int i = 1; i < RATE_TABLE_SIZE; i++) {
+            if (s_rate_table[i].window_start_us < s_rate_table[oldest].window_start_us) {
+                oldest = i;
+            }
+        }
+        free_slot = oldest;
     }
     memcpy(s_rate_table[free_slot].node_id, node_id, PKT_NODE_ID_LEN);
     s_rate_table[free_slot].window_start_us = now;
