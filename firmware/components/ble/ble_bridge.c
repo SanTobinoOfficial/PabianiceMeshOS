@@ -16,7 +16,6 @@
 #include "host/util/util.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
-#include "store/config/ble_store_config.h"
 
 #include "mesh.h"
 #include "pkt.h"
@@ -225,10 +224,10 @@ esp_err_t ble_bridge_init(void)
     ble_hs_cfg.sm_their_key_dist = BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
     ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
 
-    // Trwaly magazyn kluczy bondingu (NVS, jesli CONFIG_BT_NIMBLE_NVS_PERSIST=y w
-    // sdkconfig.defaults) - bez tego telefon musialby parowac sie na nowo po kazdym
-    // restarcie wezla
-    ble_store_config_init();
+    // Trwaly magazyn kluczy bondingu - w przeciwienstwie do "golego" NimBLE (Apache
+    // Mynewt), port ESP-IDF nie wymaga recznego ble_store_config_init(); NVS-owy
+    // backend jest wpiety automatycznie przez sam CONFIG_BT_NIMBLE_NVS_PERSIST=y
+    // (sdkconfig.defaults) - stad brak tu wywolania, ktore w ESP-IDF nawet nie istnieje.
 
     ble_svc_gap_init();
     ble_svc_gatt_init();
