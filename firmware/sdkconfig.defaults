@@ -10,3 +10,6 @@ CONFIG_PARTITION_TABLE_SINGLE_APP=y
 # BLE (NimBLE) dla components/ble - most do telefonu bez internetu, patrz jego README
 CONFIG_BT_ENABLED=y
 CONFIG_BT_NIMBLE_ENABLED=y
+# klucze bondingu (parowania) w NVS, zeby telefon nie musial parowac sie na nowo
+# po kazdym restarcie wezla
+CONFIG_BT_NIMBLE_NVS_PERSIST=y
