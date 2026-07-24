@@ -38,9 +38,39 @@ static const char *TAG = "ble_bridge";
     0x8f, 0x6e, 0x11, 0x22, 0x33, 0x44, 0x00, 0x03
 
 static uint16_t s_tx_val_handle;
-static uint16_t s_tx_conn_handle;
-static bool s_tx_subscribed = false;
 static uint8_t s_own_addr_type;
+
+// Kilku sasiadow (rodzina, ekipa przy jednym wezle) moze chciec korzystac z tego
+// samego wezla naraz - trzymamy liste subskrybentow TX zamiast jednego conn_handle,
+// zeby wiadomosc z mesh trafiala do wszystkich podlaczonych telefonow, nie tylko
+// ostatniego ktory sie zasubskrybowal (patrz tez CONFIG_BT_NIMBLE_MAX_CONNECTIONS
+// w sdkconfig.defaults i wznawianie advertisingu po udanym polaczeniu nizej)
+#define BLE_MAX_SUBSCRIBERS 3
+static uint16_t s_subscriber_conns[BLE_MAX_SUBSCRIBERS];
+static int s_subscriber_count = 0;
+
+static void subscriber_add(uint16_t conn_handle)
+{
+    for (int i = 0; i < s_subscriber_count; i++) {
+        if (s_subscriber_conns[i] == conn_handle) {
+            return; // juz na liscie (np. duplikat eventu SUBSCRIBE)
+        }
+    }
+    if (s_subscriber_count < BLE_MAX_SUBSCRIBERS) {
+        s_subscriber_conns[s_subscriber_count++] = conn_handle;
+    }
+}
+
+static void subscriber_remove(uint16_t conn_handle)
+{
+    for (int i = 0; i < s_subscriber_count; i++) {
+        if (s_subscriber_conns[i] == conn_handle) {
+            s_subscriber_conns[i] = s_subscriber_conns[s_subscriber_count - 1];
+            s_subscriber_count--;
+            return;
+        }
+    }
+}
 
 static int ble_gap_event(struct ble_gap_event *event, void *arg);
 
@@ -140,10 +170,17 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg)
                 ESP_LOGW(TAG, "ble_gap_security_initiate nie wyszlo: %d", rc);
             }
         }
+        // Wznawiamy advertising od razu, nie tylko po rozlaczeniu - inaczej po
+        // pierwszym udanym polaczeniu wezel staje sie niewidoczny dla kolejnych
+        // telefonow (NimBLE sam zatrzymuje advertising w momencie polaczenia).
+        // Jesli limit CONFIG_BT_NIMBLE_MAX_CONNECTIONS jest juz wyczerpany,
+        // ble_gap_adv_start po prostu nie wyjdzie - logujemy i nie traktujemy
+        // tego jako bledu inicjalizacji
+        ble_advertise();
         return 0;
 
     case BLE_GAP_EVENT_DISCONNECT:
-        s_tx_subscribed = false;
+        subscriber_remove(event->disconnect.conn.conn_handle);
         ble_advertise();
         return 0;
 
@@ -159,9 +196,13 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg)
 
     case BLE_GAP_EVENT_SUBSCRIBE:
         if (event->subscribe.attr_handle == s_tx_val_handle) {
-            s_tx_subscribed = event->subscribe.cur_notify;
-            s_tx_conn_handle = event->subscribe.conn_handle;
-            ESP_LOGI(TAG, "telefon %s notyfikacje TX", s_tx_subscribed ? "wlaczyl" : "wylaczyl");
+            if (event->subscribe.cur_notify) {
+                subscriber_add(event->subscribe.conn_handle);
+            } else {
+                subscriber_remove(event->subscribe.conn_handle);
+            }
+            ESP_LOGI(TAG, "telefon %s notyfikacje TX (aktywnych subskrybentow: %d)",
+                     event->subscribe.cur_notify ? "wlaczyl" : "wylaczyl", s_subscriber_count);
         }
         return 0;
 
@@ -259,8 +300,8 @@ esp_err_t ble_bridge_init(void)
 
 void ble_bridge_on_mesh_rx(const uint8_t *payload, size_t len, const uint8_t src_id[PKT_NODE_ID_LEN])
 {
-    if (!s_tx_subscribed) {
-        return; // telefon akurat nie podlaczony/nie subskrybuje - wiadomosc i tak zostaje w historii mesh
+    if (s_subscriber_count == 0) {
+        return; // zaden telefon akurat nie subskrybuje - wiadomosc i tak zostaje w historii mesh
     }
     if (len > PKT_MAX_PAYLOAD) {
         len = PKT_MAX_PAYLOAD; // nie powinno sie zdarzyc, payload z mesh juz jest ograniczony
@@ -270,13 +311,17 @@ void ble_bridge_on_mesh_rx(const uint8_t *payload, size_t len, const uint8_t src
     memcpy(buf, src_id, PKT_NODE_ID_LEN);
     memcpy(buf + PKT_NODE_ID_LEN, payload, len);
 
-    struct os_mbuf *om = ble_hs_mbuf_from_flat(buf, PKT_NODE_ID_LEN + len);
-    if (!om) {
-        ESP_LOGW(TAG, "ble_hs_mbuf_from_flat nie wyszlo, gubie notyfikacje");
-        return;
-    }
-    int rc = ble_gatts_notify_custom(s_tx_conn_handle, s_tx_val_handle, om);
-    if (rc != 0) {
-        ESP_LOGW(TAG, "ble_gatts_notify_custom nie wyszlo: %d", rc);
+    // kazde wywolanie ble_gatts_notify_custom przejmuje/zwalnia swoj mbuf, wiec
+    // budujemy osobny per subskrybent zamiast probowac dzielic jeden
+    for (int i = 0; i < s_subscriber_count; i++) {
+        struct os_mbuf *om = ble_hs_mbuf_from_flat(buf, PKT_NODE_ID_LEN + len);
+        if (!om) {
+            ESP_LOGW(TAG, "ble_hs_mbuf_from_flat nie wyszlo, gubie notyfikacje dla jednego subskrybenta");
+            continue;
+        }
+        int rc = ble_gatts_notify_custom(s_subscriber_conns[i], s_tx_val_handle, om);
+        if (rc != 0) {
+            ESP_LOGW(TAG, "ble_gatts_notify_custom nie wyszlo: %d", rc);
+        }
     }
 }

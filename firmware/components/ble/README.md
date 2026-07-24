@@ -66,12 +66,16 @@ realny problem wcześniej (dowolny telefon mógł czytać/pisać bez żadnego uw
 Pełna ochrona przed MITM przy parowaniu wymagałaby wyświetlacza/przycisku na węźle do
 potwierdzenia numerycznego (Numeric Comparison) - poza zakresem obecnego sprzętu.
 
+Kilka telefonów może korzystać z jednego węzła naraz (`BLE_MAX_SUBSCRIBERS` = 3,
+zgodne z `CONFIG_BT_NIMBLE_MAX_CONNECTIONS` w `sdkconfig.defaults`) - węzeł wznawia
+advertising zaraz po każdym udanym połączeniu (nie tylko po rozłączeniu), więc zostaje
+widoczny dla kolejnych telefonów, i notyfikuje TX do wszystkich aktualnie
+zasubskrybowanych połączeń, nie tylko ostatniego.
+
 ## Czego tu jeszcze brakuje
 
 - Ochrony przed MITM w trakcie samego parowania (patrz wyżej - wymaga wyświetlacza na
   węźle, którego obecny sprzęt nie ma).
-- Wsparcia wielu jednoczesnych połączeń telefonów do jednego węzła (NimBLE to
-  udźwignie, ten kod na razie śledzi tylko jedno `conn_handle` dla TX notify).
 - Realnego testu na sprzęcie - napisane i zweryfikowane pod kątem zgodności z API
   NimBLE (ESP-IDF v5.2, ten sam target co w `firmware-ci.yml`), ale bez lokalnego
   `idf.py build` (brak zainstalowanego ESP-IDF w środowisku, w którym to powstało) -

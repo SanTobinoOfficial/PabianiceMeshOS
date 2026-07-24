@@ -13,3 +13,6 @@ CONFIG_BT_NIMBLE_ENABLED=y
 # klucze bondingu (parowania) w NVS, zeby telefon nie musial parowac sie na nowo
 # po kazdym restarcie wezla
 CONFIG_BT_NIMBLE_NVS_PERSIST=y
+# kilka telefonow moze korzystac z tego samego wezla naraz - patrz
+# BLE_MAX_SUBSCRIBERS w components/ble/ble_bridge.c, te dwie wartosci maja sie zgadzac
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=3
